@@ -18,46 +18,66 @@ class Neuron():
 
         self.dendrite_list = []
 
-        self.dend_soma = Soma()
+        self.dend_soma = Soma(**{"neuron_name":self.name})
         self.dend_ref  = Refractory()
         self.dend_ref.outgoing = self.dend_soma
 
         self.dendrite_list += [self.dend_soma,self.dend_ref]
-        self.make_components_comp()
+        
+        self.make_dendrites()
+        self.make_dend_dict()
+        self.connect_dendrites()
 
-    def find_dend(self,dend,coords):
+    def make_dend(self,l,g,d,dend_params):
         """
         Docstring
         """
-        l,g,d = coords
-        if f"{l}_{g}_{d}" in dend.name:
-
-
-    def make_weighted_dend(self,l,g,d,weights,dend_params):
-        """
-        Docstring
-        """
-        if l==0:
-            dend_params["outgoing"] = (self.dend_soma,weights[l][g][d])
-        else:
-            dend_params["outgoing"] = ((l-1,0,g),weights[l][g][d])
         dend_params["name"] = f"{self.name}_dend_{l}_{g}_{d}"
+        dend_params["loc"]  = (l,g,d)
         dendrite = Dendrite(**dend_params)
         return dendrite
     
-
-    def make_components_comp(self):
+    def get_dend_name(self,dend):
+        return dend.name
+    
+    def make_dendrites(self):
         """
         Docstring
         """
         dend_params = {}
         self.dendrite_list += [
-            self.make_weighted_dend(l,g,d,self.weights,dend_params)
+            self.make_dend(l+1,g,d,dend_params)
             for l,layer in enumerate(self.weights)
             for g,group in enumerate(layer)
             for d,dend in enumerate(group)
             ]
         
+    def make_dend_dict(self):
+        """
+        Docstring
+        """
+        dend_names = [*map(self.get_dend_name,self.dendrite_list)]
+        print(dend_names)
+        self.dend_dict = dict(zip(dend_names,self.dendrite_list))
+
+    
+    def add_arbor_vertex(self,dend):
+        """
+        Docstring
+        """
+
+        out_loc = (dend.loc[0]-1,0,dend.loc[1])
+        print(f"{dend.loc} -> {out_loc}")
+        if dend.loc[0]==1:
+            out_name = f"{self.name}_dend_soma"
+        else:
+            out_name = f"{self.name}_dend_{out_loc[0]}_{out_loc[1]}_{out_loc[2]}"
+        dend.outgoing = self.dend_dict[out_name]
+        return f"{dend.loc} -> {out_loc}"
+
+    def connect_dendrites(self):
+        connect = map(self.add_arbor_vertex,self.dendrite_list[2:])
+        print([*connect])
 
     def make_components_loop(self):
         """

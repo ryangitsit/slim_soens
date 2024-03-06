@@ -50,7 +50,7 @@ class Dendrite():
         # parameters
         self.ib   = 1.8
         self.tau  = 150
-        self.beta = 2*np.pi*1e2
+        self.beta = 2*np.pi*1e3
 
         # dynamic parameters
         self.offset_flux = 0
@@ -80,10 +80,11 @@ class Soma(Dendrite):
     """
     def __init__(self, **params):
         super().__init__()
-        self.name       = f"Dendrite_{self.id}_Soma"
+        neuron_name = params["neuron_name"]
+        self.name = f"{neuron_name}_dend_soma"
+        self.loc  = (0,0,0)
         self.__dict__.update(params)
-
-
+        
     def __del__(self):
         """
         """

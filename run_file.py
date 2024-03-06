@@ -1,6 +1,6 @@
 from make_neuron import *
 import timeit
-
+import sys
 
 weights_arbor = [
     [[0.2,0.5]],
@@ -20,6 +20,9 @@ def create_neuron():
 
 neuron = create_neuron()
 
+print(f"Neuron object size = {sys.getsizeof(neuron)}")
+
+
 def print_outgoing(dend):
     if dend.outgoing is not None:
         return (f"{dend.name} -> {dend.outgoing}")
@@ -31,3 +34,8 @@ result = map(print_outgoing,neuron.dendrite_list)
 
 
 print(*result, sep = "\n") 
+
+"""
+Try:
+    weights -> adjacency -> make_dends -> connect_dends
+"""
