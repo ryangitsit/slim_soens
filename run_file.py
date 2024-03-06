@@ -4,7 +4,8 @@ import timeit
 
 weights_arbor = [
     [[0.2,0.5]],
-    [[0.2,0.2,0.2],[0.5,0.5,0.5]]
+    [[0.2,0.2],[0.5,0.5]],
+    [[.21,.21],[.22,.22],[.51,.51],[.52,.52]]
 ]
 
 
@@ -21,7 +22,7 @@ neuron = create_neuron()
 
 def print_outgoing(dend):
     if dend.outgoing is not None:
-        return (f"{dend.name} -> {dend.outgoing.name}")
+        return (f"{dend.name} -> {dend.outgoing}")
     else:
         return (f"{dend.name} -> {dend.outgoing}")
 
