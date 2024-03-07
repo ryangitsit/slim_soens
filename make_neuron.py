@@ -28,6 +28,9 @@ class Neuron():
         self.make_dend_dict()
         self.connect_dendrites()
 
+    def weights_to_adjacency(self):
+        
+
     def make_dend(self,l,g,d,dend_params):
         """
         Docstring
