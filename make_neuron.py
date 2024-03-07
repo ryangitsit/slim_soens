@@ -20,16 +20,18 @@ class Neuron():
         self.dendrite_list = []
 
         self.dend_soma = Soma(**{"neuron_name":self.name})
-        self.dend_ref  = Refractory()
+        self.dend_ref  = Refractory(**{"neuron_name":self.name})
         self.dend_ref.outgoing = [self.dend_soma]
 
         self.dendrite_list += [self.dend_soma,self.dend_ref]
         
         self.make_dendrites()
-        print(len(name_map(self.dendrite_list)))
+
         self.adjacency = weights_to_adjacency(self.weights)
 
         self.add_edges()
+
+        self.add_synaptic_layer()
 
         # self.make_dend_dict()
         # self.connect_dendrites()
@@ -74,7 +76,36 @@ class Neuron():
             for j in range(total_dendrites):
                 if self.adjacency[i][j] != 0:
                     self.dendrite_list[i].outgoing.append(self.dendrite_list[j])
-                    self.dendrite_list[j].incoming.append(self.dendrite_list[i])    
+                    self.dendrite_list[j].incoming.append(self.dendrite_list[i])   
+
+    def add_synapse(self,dend):
+        syn = Synapse(**{'dend_name':dend.name}) 
+        dend.incoming = syn
+        return syn
+
+    def add_synaptic_layer(self):
+        self.synapse_list = [
+            self.add_synapse(dend)
+            for d,dend in enumerate(self.dendrite_list) 
+            if dend.incoming==[] and 'ref' not in dend.name
+            ]
+        
+    def add_spikes(self,syn,spike_times):
+        syn.spike_times = np.sort(np.concatenate([syn.spike_times,spike_times]))
+
+    def add_uniform_input(self,spike_times):
+
+        if type(spike_times)!=np.ndarray: spike_times = np.array(spike_times)
+
+        # spike_adder = [
+        #     self.add_spikes(syn,spike_times)
+        #     for syn in self.synapse_list
+        #     ]
+        
+        for syn in self.synapse_list:
+            syn.spike_times = np.sort(np.concatenate([syn.spike_times,spike_times]))
+
+
 
     # def add_arbor_vertex(self,dend):
     #     """

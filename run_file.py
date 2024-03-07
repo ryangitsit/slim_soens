@@ -4,6 +4,7 @@ from system_functions import *
 import matplotlib.pyplot as plt
 from plotting import heatmap_adjacency
 import timeit
+import time
 import sys
 
 weights_arbor = [
@@ -15,19 +16,27 @@ weights_arbor = [
 def create_neuron():
     return Neuron(weights=weights_arbor)
 
-
+t1 = time.perf_counter()
 neuron = create_neuron()
+t2 = time.perf_counter()
 
-print(f"Neuron object size = {sys.getsizeof(neuron)}")
+print(f"Neuron creation time = {t2-t1}")
+print(f"Initial neuron object size = {sys.getsizeof(neuron)}")
+
+inpt_spike_times  = np.arange(10,500,50)
+
+t1 = time.perf_counter()
+neuron.add_uniform_input(inpt_spike_times)
+t2 = time.perf_counter()
+
+print(f"Uniform input connection time = {t2-t1}")
 
 
+# outgoing_map(neuron)
+# incoming_map(neuron)
+# print_names(neuron.synapse_list)
+# print_attrs(neuron.synapse_list,["name","spike_times"])
 
-outgoing_map(neuron)
 
-incoming_map(neuron)
+print(f"Final neuron object size = {sys.getsizeof(neuron)}")
 
-# 
-# # """
-# # Try:
-# #     weights -> adjacency -> make_dends -> connect_dends
-# # """

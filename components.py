@@ -24,6 +24,11 @@ class Synapse():
         self.incoming = None
         self.outgoing = None
 
+        self.spike_times = []
+
+        self.__dict__.update(params)
+        self.name += "_to_"+self.dend_name
+
     def add_outout(self,output_object):
         """
         Docstring
@@ -31,7 +36,7 @@ class Synapse():
         pass
 
     def __del__(self):
-        print(f'Synapse {self.name} deleted')
+        # print(f'Synapse {self.name} deleted')
         return
 
 
@@ -81,8 +86,8 @@ class Soma(Dendrite):
     def __init__(self, **params):
         super().__init__()
         neuron_name = params["neuron_name"]
-        self.name = f"{neuron_name}_dend_soma"
-        self.loc  = (0,0,0)
+        self.name   = f"{neuron_name}_dend_soma"
+        self.loc    = (0,0,0)
         self.__dict__.update(params)
         
     def __del__(self):
@@ -97,7 +102,8 @@ class Refractory(Dendrite):
     """
     def __init__(self, **params):
         super().__init__()
-        self.name       = f"Dendrite_{self.id}_Refractory"
+        neuron_name = params["neuron_name"]
+        self.name   = f"{neuron_name}_dend_ref"
         self.__dict__.update(params)
 
     def __del__(self):
