@@ -1,3 +1,5 @@
+import numpy as np
+
 def weights_to_adjacency(weights):
     """
     Docstring
@@ -8,7 +10,7 @@ def weights_to_adjacency(weights):
 
     # initialize adjacency matrix
     adj_mat = np.zeros((side_length,side_length))
-
+    adj_mat[1][0] = 0.5
     count = 2
     for l,layer in enumerate(weights):
         for g,group in enumerate(layer):
@@ -26,4 +28,34 @@ def weights_to_adjacency(weights):
                 count+=1
 
     return adj_mat
+
+
+def get_name(obj):
+    if hasattr(obj,'name'):
+        return obj.name
+    else:
+        return None
+
+def name_map(obj_list):
+    return [*map(get_name,obj_list)]
+
+def print_outgoing(dend):
+    return (f"{dend.name} -> {name_map(dend.outgoing)}")
+
+def outgoing_map(neuron):
+    print("\n")
+    result = map(print_outgoing,neuron.dendrite_list)
+    print(*result, sep = "\n") 
+    print("\n")
+    return [*result]
+
+def print_incoming(dend):
+    return (f"{dend.name} <- {name_map(dend.incoming)}")
+
+def incoming_map(neuron):
+    print("\n")
+    result = map(print_incoming,neuron.dendrite_list)
+    print(*result, sep = "\n") 
+    print("\n")
+    return [*result]
 

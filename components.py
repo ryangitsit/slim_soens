@@ -56,8 +56,8 @@ class Dendrite():
         self.offset_flux = 0
 
         # connections
-        self.outgoing = None
-        self.incoming = None
+        self.outgoing = []
+        self.incoming = []
 
         self.__dict__.update(params)
 
