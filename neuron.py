@@ -33,8 +33,6 @@ class Neuron():
 
         self.add_synaptic_layer()
 
-        # self.make_dend_dict()
-        # self.connect_dendrites()
         
 
     def make_dend(self,l,g,d,dend_params):

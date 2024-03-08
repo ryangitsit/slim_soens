@@ -24,7 +24,8 @@ class Synapse():
         self.incoming = None
         self.outgoing = None
 
-        self.spike_times = []
+        self.spike_times = np.array([])
+        self.flux        = np.array([])
 
         self.__dict__.update(params)
         self.name += "_to_"+self.dend_name
