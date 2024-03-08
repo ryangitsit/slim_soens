@@ -54,9 +54,10 @@ class Dendrite():
         Dendrite.next_id += 1
 
         # parameters
-        self.ib   = 1.8
-        self.tau  = 150
-        self.beta = 2*np.pi*1e3
+        self.ib    = 1.8
+        self.tau   = 150
+        self.beta  = 2*np.pi*1e3
+        self.alpha = 0.053733049288045114
 
         # dynamic parameters
         self.offset_flux = 0
@@ -64,6 +65,10 @@ class Dendrite():
         # connections
         self.outgoing = []
         self.incoming = []
+
+        # collectors
+        self.flux   = []
+        self.signal = []
 
         self.__dict__.update(params)
 
@@ -86,9 +91,11 @@ class Soma(Dendrite):
     """
     def __init__(self, **params):
         super().__init__()
-        neuron_name = params["neuron_name"]
-        self.name   = f"{neuron_name}_dend_soma"
-        self.loc    = (0,0,0)
+        neuron_name     = params["neuron_name"]
+        self.name       = f"{neuron_name}_dend_soma"
+        self.loc        = (0,0,0)
+        self.threshold  = 0.5
+        self.quiescence = 0
         self.__dict__.update(params)
         
     def __del__(self):

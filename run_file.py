@@ -17,31 +17,46 @@ weights_arbor = [
     [[.21,.21],[.22,.22],[.51,.51],[.52,.52]]
 ]
 
-def create_neuron():
-    return Neuron(weights=weights_arbor)
+weights = [
+    [np.random.rand(10)],
+    [np.random.rand(10) for _ in range(10)],
+    [np.random.rand(10) for _ in range(100)]
+]
 
 t1 = time.perf_counter()
-neuron = create_neuron()
+neuron = Neuron(weights=weights)
 t2 = time.perf_counter()
 
 # print(f"Neuron creation time = {t2-t1}")
 print(f"Initial neuron object size = {sys.getsizeof(neuron)}\n")
 
-inpt_spike_times  = np.arange(10,500,50)
+inpt_spike_times  = np.arange(10,1000,50)
 
 t1 = time.perf_counter()
 neuron.add_uniform_input(inpt_spike_times)
 t2 = time.perf_counter()
 
 # print(f"Uniform input connection time = {t2-t1}")
+# print(type(neuron.synapse_list[0]))
+# neuron.dend_soma.offset_flux = 0.5
+t1 = time.perf_counter()
+net = Network(nodes=[neuron],run_simulation=True,duration=1000)
+t2 = time.perf_counter()
+print(f"Run time = {t2-t1}")
 
-
-net = Network(nodes=[neuron],run_simulation=True,duration=500)
+# for node in net.nodes:
+#     for syn in node.synapse_list:
+#         plt.plot(syn.flux)
+# plt.show()
 
 for node in net.nodes:
-    for syn in node.synapse_list:
-        plt.plot(syn.flux)
+    for dend in node.dendrite_list[2:]:
+        plt.plot(dend.flux,'--')
+        plt.plot(dend.signal)
+    plt.plot(neuron.dend_ref.flux,':',color='red')
+    plt.plot(neuron.dend_soma.signal,linewidth=2,color='b')
 plt.show()
+
 # outgoing_map(neuron)
 # incoming_map(neuron)
 # print_names(neuron.synapse_list)

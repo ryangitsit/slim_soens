@@ -30,15 +30,24 @@ def weights_to_adjacency(weights):
 
 
 def get_name(obj):
+    """
+    Docstring
+    """
     if hasattr(obj,'name'):
         return obj.name
     else:
         return None
 
 def name_map(obj_list):
+    """
+    Docstring
+    """
     return [*map(get_name,obj_list)]
 
 def print_names(obj_list):
+    """
+    Docstring
+    """
     print("\n")
     result = name_map(obj_list)
     print(*result, sep = "\n") 
@@ -46,9 +55,15 @@ def print_names(obj_list):
     return [*result]
 
 def print_outgoing(dend):
+    """
+    Docstring
+    """
     return (f"{dend.name} -> {name_map(dend.outgoing)}")
 
 def outgoing_map(neuron):
+    """
+    Docstring
+    """
     print("\n")
     result = map(print_outgoing,neuron.dendrite_list)
     print(*result, sep = "\n") 
@@ -56,9 +71,15 @@ def outgoing_map(neuron):
     return [*result]
 
 def print_incoming(dend):
+    """
+    Docstring
+    """
     return (f"{dend.name} <- {name_map(dend.incoming)}")
 
 def incoming_map(neuron):
+    """
+    Docstring
+    """
     print("\n")
     result = map(print_incoming,neuron.dendrite_list)
     print(*result, sep = "\n") 
@@ -67,14 +88,23 @@ def incoming_map(neuron):
 
 
 def get_attr(obj,attr):
+    """
+    Docstring
+    """
     return obj.__dict__[attr]
 
 def attr_map(obj_list,attr):
+    """
+    Docstring
+    """
     attrs = [attr for _ in range(len(obj_list))]
     return [*map(get_attr,obj_list,attrs)]
 
 
 def print_attrs(obj_list,attrs):
+    """
+    Docstring
+    """
     print("\n")
     results = []
     for attr in attrs:
@@ -88,3 +118,21 @@ def print_attrs(obj_list,attrs):
         print(string)
     print("\n")
     return [*result]
+
+def get_jj_params():
+    """
+    Docstring
+    """
+    jj_params = {
+        'c_j'       : 1.5e-13, 
+        'r_j'       : 2.565564120477849, 
+        'tau_0'     : 1.2827820602389245e-12, 
+        'Ic'        : 9.999999999999999e-05, 
+        'beta_c'    : 0.3, 
+        'gamma'     : 1.5e-09, 
+        'V_j'       : 0.0002565564120477849, 
+        'omega_c'   : 779555647834.4772, 
+        'omega_p'   : 1423267377164.988,
+        't_tau_cnvt': 1e-9/1.2827820602389245e-12
+        }
+    return jj_params

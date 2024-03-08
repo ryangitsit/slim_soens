@@ -14,6 +14,7 @@ class Neuron():
         Neuron.next_id += 1
 
         self.weights = [[[]]]
+        self.synaptic_strength = 1
 
         self.__dict__.update(params)
 
@@ -21,7 +22,8 @@ class Neuron():
 
         self.dend_soma = Soma(**{"neuron_name":self.name})
         self.dend_ref  = Refractory(**{"neuron_name":self.name})
-        self.dend_ref.outgoing = [self.dend_soma]
+        self.dend_ref.outgoing = [(self.dend_soma,-0.75)]
+        self.dend_soma.incoming = [(self.dend_ref,-0.75)]
 
         self.dendrite_list += [self.dend_soma,self.dend_ref]
         
@@ -73,20 +75,28 @@ class Neuron():
         for i in range(total_dendrites):
             for j in range(total_dendrites):
                 if self.adjacency[i][j] != 0:
-                    self.dendrite_list[i].outgoing.append(self.dendrite_list[j])
-                    self.dendrite_list[j].incoming.append(self.dendrite_list[i])   
+                    
+                    self.dendrite_list[i].outgoing.append(
+                        (self.dendrite_list[j],self.adjacency[i][j])
+                        )
+                    self.dendrite_list[j].incoming.append(
+                        (self.dendrite_list[i],self.adjacency[i][j])
+                        )   
 
     def add_synapse(self,dend):
         syn = Synapse(**{'dend_name':dend.name}) 
-        dend.incoming = syn
+        dend.incoming.append((syn,self.synaptic_strength))
         return syn
 
     def add_synaptic_layer(self):
-        self.synapse_list = [
-            self.add_synapse(dend)
-            for d,dend in enumerate(self.dendrite_list) 
-            if dend.incoming==[] and 'ref' not in dend.name
-            ]
+        if len(self.dendrite_list) <= 2:
+            self.synapse_list = [self.add_synapse(self.dend_soma)]
+        else:
+            self.synapse_list = [
+                self.add_synapse(dend)
+                for d,dend in enumerate(self.dendrite_list) 
+                if dend.incoming==[] and 'ref' not in dend.name
+                ]
         
     def add_spikes(self,syn,spike_times):
         syn.spike_times = np.sort(np.concatenate([syn.spike_times,spike_times]))
