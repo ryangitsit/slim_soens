@@ -20,10 +20,10 @@ class Neuron():
 
         self.dendrite_list = []
 
-        self.dend_soma = Soma(**{"neuron_name":self.name})
+        self.dend_soma = Soma(neuron_name=self.name,**params)
         self.dend_ref  = Refractory(**{"neuron_name":self.name})
-        self.dend_ref.outgoing = [(self.dend_soma,-0.75)]
-        self.dend_soma.incoming = [(self.dend_ref,-0.75)]
+        self.dend_ref.outgoing = [(self.dend_soma,-0.85)]
+        self.dend_soma.incoming = [(self.dend_ref,-0.85)]
 
         self.dendrite_list += [self.dend_soma,self.dend_ref]
         

@@ -136,3 +136,36 @@ def get_jj_params():
         't_tau_cnvt': 1e-9/1.2827820602389245e-12
         }
     return jj_params
+
+def picklit(obj,path,name):
+    import os
+    import pickle
+    try:
+        os.makedirs(path)    
+    except FileExistsError:
+        pass
+    pick = f'{path}/{name}.pickle'
+    filehandler = open(pick, 'wb') 
+    pickle.dump(obj, filehandler)
+    filehandler.close()
+
+def picklin(path,name):
+    import os
+    import pickle
+    file = os.path.join(path, name)
+    if '.pickle' in file:
+        file = file
+    else:
+        file = file + '.pickle'
+    # print(file)
+    file_to_read = open(file, "rb")
+    obj = pickle.load(file_to_read)
+    file_to_read.close()
+    return obj
+
+def binary_fanin(layers):
+    weights = [
+        [np.random.rand(2) for _ in range(2**(l-1))] 
+        for l in range(1,layers+1)
+        ]
+    return weights
