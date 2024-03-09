@@ -67,18 +67,6 @@ def find_phi_th(val,A,B):
     """
     return A*np.arccos(val/2) + B*(2-val)
 
-# def s_of_phi(phi,s,A=1,B=.466,ib=1.8):
-#     """
-#     Docstring
-#     """
-#     # phi_th = find_phi_th(ib-s,.540,B)
-#     phi_th = 0.1675
-#     r_fq = A*(phi-phi_th)*(ib-s)
-#     if type(r_fq) == np.ndarray:
-#         r_fq[phi<phi_th] = 0.0
-#     else:
-#         if phi<phi_th: r_fq = 0
-#     return r_fq
 
 def s_of_phi(phi,s,A=1,B=.466,ib=1.8):
     """
@@ -149,11 +137,14 @@ def run_slim_soens(net):
         initialize_dendrites(node,net.duration,net.dt,time_steps)
 
     t1 = time.perf_counter()
+
     for t in range(time_steps-1):
         for node in net.nodes:
             for dend in node.dendrite_list[1:]:
                 update_dendrite(dend,t,net.dt,d_tau)
             update_soma(node.dend_soma,node.dend_ref,t,net.dt,d_tau)
+
+
 
     t = time_steps-1
     for node in net.nodes:

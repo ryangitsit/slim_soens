@@ -23,9 +23,9 @@ def backend_timer_duration(backends,durations):
     # durations = np.arange(100,501,100)
     # print(len(durations))
 
-    
-    run_times_per_duration = [[],[]]
-    variance_per_duration = [[],[]]
+    run_times_per_duration = [[] for _ in range(len(backend))]
+    variance_per_duration = [[] for _ in range(len(backend))]
+
     for b,backend in enumerate(backends):
         for d,duration in enumerate(durations):
             run_times = []
@@ -93,8 +93,8 @@ def backend_timer_size(backends,layers):
     np.random.seed(10)
 
 
-    run_times_per_layer = [[],[]]
-    variance_per_layer= [[],[]]
+    run_times_per_layer = [[] for _ in range(len(backend))]
+    variance_per_layer= [[] for _ in range(len(backend))]
     
     for b,backend in enumerate(backends):
         for l,layer in enumerate(layers):
@@ -132,7 +132,7 @@ def backend_timer_size(backends,layers):
     return runtime_data
 
 
-layers = np.arange(2,10,1).astype('int32')
+# layers = np.arange(2,10,1).astype('int32')
 backends = ['slim_soens']
 # runtime_data = backend_timer_size(backends,layers)
 
@@ -156,5 +156,68 @@ def plot_size_runtimes(runtime_data,layers):
     plt.legend()
     plt.savefig(f"results/profiling/runtimes_arbor_{backend}")
     plt.show()
-runtime_data = picklin("results/profiling/","runtimes_layers_slim_soens")
-plot_size_runtimes(runtime_data,layers)
+
+
+# runtime_data = picklin("results/profiling/","runtimes_layers_slim_soens")
+# plot_size_runtimes(runtime_data,layers)
+
+
+def comparison_plot(exp,files,names,x):
+    all_dat = []
+    plt.style.use("seaborn-v0_8-darkgrid")
+    plt.figure(figsize=(8,5))
+    colors = plt.rcParams["axes.prop_cycle"].by_key()["color"]
+    count=0
+    for f,file in enumerate(files):
+        name = names[count]
+        print(f,name)
+        runtime_data = picklin("results/profiling/",file)
+        all_dat.append(runtime_data)
+
+        for b in range(len(runtime_data)):
+            if runtime_data[0][b] != []:
+                if names[count] != 'python':
+                    plt.plot(x,runtime_data[0][b],linewidth=2,label=names[count],color=colors[count])
+                    
+                    lower_bound = runtime_data[0][b]-0.5*np.array(runtime_data[1][b])
+                    upper_bound = runtime_data[0][b]+0.5*np.array(runtime_data[1][b])
+
+                    plt.fill_between(x, lower_bound, upper_bound, 
+                                    facecolor=colors[count], alpha=0.2)
+                count+=1
+
+    plt.title(f"Time Stepper Run Time for Increasing {exp.title()}",fontsize=16)
+    if exp=='duration':
+        plt.xlabel(f"Duration (ns)",fontsize=14)
+    else:
+        plt.xlabel(r"Layers of Binary Fanin -- Total Dendrites = $\sum^{layer}_{n=1}2^n$",fontsize=14)
+        plt.subplots_adjust(bottom=0.2)
+    plt.ylabel("Run Time (s)",fontsize=14)
+    plt.legend()
+    # plt.savefig(f"results/profiling/runtimes_arbor_{backend}")
+    plt.show()
+
+
+files = [
+    "runtimes_pointneuron",
+    "runtimes_pointneuron_slim_soens",
+    "runtimes_pointneuron_16threads",
+]
+
+names = ['julia','python','slim_soens','julia_multithreading']
+exp='duration'
+durations = np.arange(1000,50001,1000)
+print(len(durations))
+comparison_plot(exp,files,names,durations)
+
+# files = [
+#     "runtimes_layers",
+#     "runtimes_layers_slim_soens",
+#     "runtimes_layers_16threads",
+# ]
+
+# names = ['julia','python','slim_soens','julia_multithreading']
+# exp='arbor'
+# layers = np.arange(2,10,1).astype('int32')
+# print(len(layers))
+# comparison_plot(exp,files,names,layers)
