@@ -176,14 +176,14 @@ def comparison_plot(exp,files,names,x):
 
         for b in range(len(runtime_data)):
             if runtime_data[0][b] != []:
-                if names[count] != 'python':
-                    plt.plot(x,runtime_data[0][b],linewidth=2,label=names[count],color=colors[count])
-                    
-                    lower_bound = runtime_data[0][b]-0.5*np.array(runtime_data[1][b])
-                    upper_bound = runtime_data[0][b]+0.5*np.array(runtime_data[1][b])
+                # if names[count] != 'python':
+                plt.plot(x,runtime_data[0][b],linewidth=2,label=names[count],color=colors[count])
+                
+                lower_bound = runtime_data[0][b]-0.5*np.array(runtime_data[1][b])
+                upper_bound = runtime_data[0][b]+0.5*np.array(runtime_data[1][b])
 
-                    plt.fill_between(x, lower_bound, upper_bound, 
-                                    facecolor=colors[count], alpha=0.2)
+                plt.fill_between(x, lower_bound, upper_bound, 
+                                facecolor=colors[count], alpha=0.2)
                 count+=1
 
     plt.title(f"Time Stepper Run Time for Increasing {exp.title()}",fontsize=16)

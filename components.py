@@ -21,8 +21,8 @@ class Synapse():
         self.spd_reset_time   = 35
 
         # connections
-        self.incoming = None
-        self.outgoing = None
+        self.incoming = []
+        self.outgoing = []
 
         self.spike_times = np.array([])
         self.flux        = np.array([])

@@ -1,7 +1,7 @@
 import numpy as np
 import time
 import components
-# from numba import jit
+import multiprocessing
 
 def generic_synaptic_event(dt):
     """
@@ -50,7 +50,7 @@ def initialize_synapses(node,tf,dt,time_steps):
 
     for syn in node.synapse_list:
         syn.flux = np.zeros((time_steps,))
-        for spk_t in syn.spike_times[syn.spike_times<=tf]:
+        for spk_t in syn.spike_times:
 
             add_spike(syn,spk_t,dt,tf)
 
@@ -125,23 +125,56 @@ def update_soma(soma,ref,t,dt,d_tau,tf):
             update_signal(soma,t,dt,d_tau)
     return soma
 
-def run_slim_soens(net):
+def update_arbor(n,return_dict,node,t,dt,d_tau,tf):
+    for dend in node.dendrite_list[1:]:
+        update_dendrite(dend,t,dt,d_tau)
+
+    update_soma(node.dend_soma,node.dend_ref,t,dt,d_tau,tf)
+    return_dict[node.name] = node
+
+def run_slim_soens_multi(net):
     """
     Docstring
     """
-    time_steps = int(net.duration/net.dt)
+    time_steps = tf = int(net.duration/net.dt)
     d_tau = net.jjparams['t_tau_cnvt']*net.dt
+    dt = net.dt
+
     for node in net.nodes:
         initialize_synapses (node,net.duration,net.dt,time_steps)
         initialize_dendrites(node,net.duration,net.dt,time_steps)
 
+    
+
     t1 = time.perf_counter()
 
+    manager = multiprocessing.Manager()
+    return_dict = manager.dict()
+
     for t in range(time_steps-1):
-        for node in net.nodes:
-            for dend in node.dendrite_list[1:]:
-                update_dendrite(dend,t,net.dt,d_tau)
-            update_soma(node.dend_soma,node.dend_ref,t,net.dt,d_tau,time_steps)
+        print(t)
+        thrds = []
+        for n,node in enumerate(net.nodes):
+
+            thrds.append(
+                multiprocessing.Process(
+                    target=update_arbor,
+                    args=(n,return_dict,node,t,dt,d_tau,tf)
+                    )
+                    )
+
+
+        for thrd in thrds:
+            thrd.start()
+
+        for thrd in thrds:
+            thrd.join()
+
+
+        # for n in range(len(net.nodes)):
+        #     net.nodes.append(return_dict[f'neuron_{n}'])
+
+        del(thrds)
 
     t = time_steps-1
     for node in net.nodes:

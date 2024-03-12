@@ -22,6 +22,7 @@ class Neuron():
 
         self.dend_soma = Soma(neuron_name=self.name,**params)
         self.dend_ref  = Refractory(**{"neuron_name":self.name})
+
         self.dend_ref.outgoing = [(self.dend_soma,-0.85)]
         self.dend_soma.incoming = [(self.dend_ref,-0.85)]
 
@@ -104,61 +105,10 @@ class Neuron():
     def add_uniform_input(self,spike_times):
 
         if type(spike_times)!=np.ndarray: spike_times = np.array(spike_times)
-
-        # spike_adder = [
-        #     self.add_spikes(syn,spike_times)
-        #     for syn in self.synapse_list
-        #     ]
         
         for syn in self.synapse_list:
             syn.spike_times = np.sort(np.concatenate([syn.spike_times,spike_times]))
 
-
-
-    # def add_arbor_vertex(self,dend):
-    #     """
-    #     Docstring
-    #     """
-
-    #     out_loc = (dend.loc[0]-1,0,dend.loc[1])
-    #     print(f"{dend.loc} -> {out_loc}")
-    #     if dend.loc[0]==1:
-    #         out_name = f"{self.name}_dend_soma"
-    #     else:
-    #         out_name = f"{self.name}_dend_{out_loc[0]}_{out_loc[1]}_{out_loc[2]}"
-    #     dend.outgoing = self.dend_dict[out_name]
-    #     return f"{dend.loc} -> {out_loc}"
-
-    # def connect_dendrites(self):
-    #     connect = map(self.add_arbor_vertex,self.dendrite_list[2:])
-    #     print([*connect])
-
-    # def make_components_loop(self):
-    #     """
-    #     Docstring
-    #     """
-    #     for l,layer in enumerate(self.weights):
-    #         for g,group in enumerate(layer):
-    #             for d,dend in enumerate(group):
-    #                 dendrite = Dendrite()
-    #                 self.dendrite_list.append(dendrite)
-
-    # def connect_denrites(self):
-    #     """
-    #     Docstring
-    #     """
-    #     count = 0
-    #     for l,layer in enumerate(self.weights):
-    #         for g,group in enumerate(layer):
-    #             for d,dend in enumerate(group):
-                    
-    #                 if l==0:
-    #                     self.dendrite_list[count+2].outgoing = self.dend_soma
-                    
-    #                 # else:
-    #                 #     self.dendrite_list[count+2].outgoing = 
-                    
-    #                 count+=1
 
 
     def __del__(self):
