@@ -87,6 +87,7 @@ class Neuron():
     def add_synapse(self,dend):
         syn = Synapse(**{'dend_name':dend.name}) 
         dend.incoming.append((syn,self.synaptic_strength))
+        syn.outgoing.append(dend)
         return syn
 
     def add_synaptic_layer(self):

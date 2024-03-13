@@ -59,7 +59,7 @@ def initialize_dendrites(node,tf,dt,time_steps):
     Docstring
     """
     for dend in node.dendrite_list:
-        dend.flux   = np.ones((time_steps,))*dend.offset_flux
+        dend.flux   = np.ones((time_steps,))*dend.flux_offset
         dend.signal = np.zeros((time_steps,))
 
 def find_phi_th(val,A,B):

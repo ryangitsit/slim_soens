@@ -60,7 +60,7 @@ class Dendrite():
         self.alpha = 0.053733049288045114
 
         # dynamic parameters
-        self.offset_flux = 0
+        self.flux_offset = 0
 
         # connections
         self.outgoing = []

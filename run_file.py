@@ -8,10 +8,11 @@ from neuron import Neuron
 from network import Network
 
 from system_functions import *
-from plotting import heatmap_adjacency
+# from plotting import heatmap_adjacency
 
 
 def main():
+
 #     weights = [
 #         [[0.2,0.5]],
 #         [[0.2,0.2],[0.5,0.5]],
@@ -21,7 +22,7 @@ def main():
     weights = [
         [np.random.rand(10)],
         [np.random.rand(10) for _ in range(10)],
-        [np.random.rand(10) for _ in range(100)]
+        # [np.random.rand(10) for _ in range(100)]
     ]
 
     # weights = [[[]]]
