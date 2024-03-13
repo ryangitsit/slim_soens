@@ -1,5 +1,6 @@
-from components import *
 from system_functions import *
+from components import *
+import components
 
 class Neuron():
     """
@@ -109,6 +110,45 @@ class Neuron():
         
         for syn in self.synapse_list:
             syn.spike_times = np.sort(np.concatenate([syn.spike_times,spike_times]))
+
+    def add_spike_rows(self,spike_rows):
+        for i,row in enumerate(spike_rows):
+            self.synapse_list[i].spike_times = np.sort(
+                np.concatenate([self.synapse_list[i].spike_times,row])
+                )
+            
+    def add_indexed_spikes(self,indexed_spikes,channels=None):
+        if not channels:
+            channels = max(indexed_spikes[0])+1
+        spike_rows = array_to_rows(indexed_spikes,channels)
+        self.add_spike_rows(spike_rows)
+
+    def change_weight(self,dend,i,norm_factor):
+        dend.incoming[i][1] *= norm_factor
+
+    def normalize_fanin(self,fanin_factor=1):
+        max_phi_received = 0.5
+        max_s = 0.72
+        for dend in self.dendrite_list:
+
+            input_sum   = 0
+            input_maxes = []
+            for indend,w in dend.incoming:
+                if (isinstance(indend,components.Dendrite) 
+                    and not isinstance(indend,components.Refractory)): 
+                    # print(f"{dend.name} <- {indend.name} * {np.round(w,2)}")
+                    maxed =  max_s*w
+                    # print(f"  {maxed}")
+                    input_sum+=maxed
+                    input_maxes.append(maxed)
+
+            if input_sum > max_phi_received:
+                norm_ratio = fanin_factor*max_phi_received/input_sum
+                [
+                    self.change_weight(dend,i,norm_ratio) 
+                    for i in range(len(dend.incoming)) 
+                    if not isinstance(dend.incoming[0],components.Refractory)
+                    ]
 
 
 

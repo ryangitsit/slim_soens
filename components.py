@@ -54,10 +54,11 @@ class Dendrite():
         Dendrite.next_id += 1
 
         # parameters
-        self.ib    = 1.8
-        self.tau   = 150
-        self.beta  = 2*np.pi*1e3
-        self.alpha = 0.053733049288045114
+        self.ib     = 1.8
+        self.tau    = 150
+        self.beta   = 2*np.pi*1e3
+        self.alpha  = 0.053733049288045114
+        self.phi_th = 1.675
 
         # dynamic parameters
         self.flux_offset = 0
@@ -96,6 +97,7 @@ class Soma(Dendrite):
         self.loc        = (0,0,0)
         self.threshold  = 0.5
         self.quiescence = 0
+        self.spikes     = []
         self.__dict__.update(params)
         
     def __del__(self):

@@ -169,3 +169,95 @@ def binary_fanin(layers):
         for l in range(1,layers+1)
         ]
     return weights
+
+
+def make_letters(patterns='zvn'):
+
+    # non-noisy nine-pixel letters
+    letters = {
+        'z': [1,1,0,
+              0,1,0,
+              0,1,1],
+
+        'v': [1,0,1,
+              1,0,1,
+              0,1,0],
+
+        'n': [0,1,0,
+              1,0,1,
+              1,0,1]
+    }
+
+    if patterns == 'zvnx+':
+        letters.update({
+            'x': [1,0,1,
+                  0,1,0,
+                  1,0,1],
+            '+': [0,1,0,
+                  1,1,1,
+                  0,1,0]
+        })
+
+    if patterns == 'all':
+        letters.update({
+            'x': [1,0,1,
+                  0,1,0,
+                  1,0,1],
+            '+': [0,1,0,
+                  1,1,1,
+                  0,1,0],
+            "|": 
+                [0,1,0,
+                 0,1,0,
+                 0,1,0],
+            "|  ": 
+                [1,0,0,
+                 1,0,0,
+                 1,0,0,],
+            "  |": 
+                [0,0,1,
+                 0,0,1,
+                 0,0,1,],
+            "-": 
+                [0,0,0,
+                 1,1,1,
+                 0,0,0],
+            "_": 
+                [0,0,0,
+                 0,0,0,
+                 1,1,1],
+            "\\": 
+                [1,0,0,
+                 0,1,0,
+                 0,0,1],
+            "/": 
+                [0,0,1,
+                 0,1,0,
+                 1,0,0],
+            "[]": 
+                [1,1,1,
+                 1,1,1,
+                 1,1,1],
+        })
+
+    return letters
+
+
+def make_inputs(letters,spike_time):
+
+    # make the input spikes for different letters
+    inputs = {}
+    for name, pixels in letters.items():
+        idx = np.where(np.array(letters[name])==1)[0]
+        spike_times = np.ones(len(idx))*spike_time
+        defined_spikes=[idx,spike_times]
+        inputs[name]=defined_spikes
+    return inputs
+
+
+def array_to_rows(array,channels):
+    rows = [ [] for _ in range(channels) ]
+    for i in range(len(array[0])):
+        rows[int(array[0][i])].append(array[1][i])
+    return rows
+

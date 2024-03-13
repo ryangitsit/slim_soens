@@ -64,7 +64,7 @@ def main():
             # print(f"{dend.name} -> new sum = {new_sum}\n")
     
     t2 = time.perf_counter()
-    print(f"Time to normalize = {np.round(t2-t1,2)}")
+    print(f"Time to normalize = {np.round(t2-t1,5)}")
 
     for syn in neuron.synapse_list:
         # print(syn.outgoing)
