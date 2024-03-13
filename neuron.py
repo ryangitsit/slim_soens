@@ -23,8 +23,8 @@ class Neuron():
         self.dend_soma = Soma(neuron_name=self.name,**params)
         self.dend_ref  = Refractory(**{"neuron_name":self.name})
 
-        self.dend_ref.outgoing = [(self.dend_soma,-0.85)]
-        self.dend_soma.incoming = [(self.dend_ref,-0.85)]
+        self.dend_ref.outgoing  = [[self.dend_soma,-0.85]]
+        self.dend_soma.incoming = [[self.dend_ref,-0.85]]
 
         self.dendrite_list += [self.dend_soma,self.dend_ref]
         
@@ -78,10 +78,10 @@ class Neuron():
                 if self.adjacency[i][j] != 0:
                     
                     self.dendrite_list[i].outgoing.append(
-                        (self.dendrite_list[j],self.adjacency[i][j])
+                        [self.dendrite_list[j],self.adjacency[i][j]]
                         )
                     self.dendrite_list[j].incoming.append(
-                        (self.dendrite_list[i],self.adjacency[i][j])
+                        [self.dendrite_list[i],self.adjacency[i][j]]
                         )   
 
     def add_synapse(self,dend):
