@@ -13,13 +13,18 @@ from system_functions import *
 
 #%%
 
+patterns = 5
+letters_all = make_letters(patterns='all')
 
-letters = make_letters(patterns='all')
+letters = {}
+for i,(k,v) in enumerate(letters_all.items()):
+    if i < patterns:
+        letters[k] = v
 
-del letters['|  ']
-del letters['  |']
-del letters['_']
-del letters['[]']
+# del letters['|  ']
+# del letters['  |']
+# del letters['_']
+# del letters['[]']
 
 # letters = make_letters(patterns='zvn')
 
@@ -28,7 +33,7 @@ del letters['[]']
 inputs = make_inputs(letters,20)
 
 key_list = list(letters.keys())
-print(len(set( key_list )))
+print(len(set( key_list )),key_list)
 keys = '  '.join(key_list)
 classes = len(key_list)
 print(f"classes = {classes}")
@@ -55,18 +60,22 @@ def make_update(node,error,eta,offmax):
             dend.update_traj.append(dend.flux_offset)
     
 
-runs       = 1000
-duration   = 250
-print_mod  = 10
-plotting   = False
+runs        = 1000
+duration    = 250
+print_mod   = 10000
+plotting    = False
+realtimeplt = False
+printing    = False
 
-eta        = 0.00005
-fan_fact   = 1.5
-max_offset = 0.2
+eta        = 0.0005
+fan_fact   = 2
+max_offset = 0.4
 
 fans = np.arange(0,6,1)
 offs = [0,.25,.5]
 
+plt.style.use('seaborn-muted')
+colors = plt.rcParams["axes.prop_cycle"].by_key()["color"]
 
 np.random.seed(10)
 nodes = []
@@ -84,11 +93,12 @@ for i,(k,v) in enumerate(letters.items()):
 accs=[]
 class_accs = [[] for _ in range(classes)]
 class_successes = np.zeros(classes)
+performance_by_tens = [[] for _ in range(classes)] 
 for run in range(runs):
-
+    if run%10==0: tenth_samples = np.zeros(classes)
     s1 = time.perf_counter()
 
-    if run%print_mod == 0: print_run = True
+    if run%print_mod == 0 and printing==True: print_run = True
     else: print_run = False
 
     if print_run==True:
@@ -122,11 +132,13 @@ for run in range(runs):
         pred = key_list[pred_idx]
         errors = targets - outputs
 
-        if pred_idx == i: 
+        if no_ties(i,outputs) == True: 
             success += 1
             class_successes[i]+=1
-            class_accs.append(class_successes[i]/(run+1))
-
+            tenth_samples[i]+=1
+        class_accs[i].append(class_successes[i]/(run+1))
+        if run%10==0: performance_by_tens[i].append(tenth_samples[i]/10)
+        # print(class_accs)
         seen += 1
         for n,node in enumerate(nodes):
             make_update(node,errors[n],eta,max_offset)
@@ -143,11 +155,31 @@ for run in range(runs):
     acc = success/seen
     accs.append(acc)
     s2 = time.perf_counter()
-    if print_run==True: 
-        print(f"Run performance:  {np.round(acc,2)}   Run time = {np.round(s2-s1,2)}")
-        print("\n=============")
-        
+    if printing==True:
+        if print_run==True: 
+            print(f"Run performance:  {np.round(acc,2)}   Run time = {np.round(s2-s1,2)}")
+            print("\n=============")
+    else:
+        print(f"Run {run} performance:  {np.round(acc,2)}   Run time = {np.round(s2-s1,2)}",end="\r")
 
+
+    if realtimeplt==True:
+        for itr,pattern in enumerate(key_list):
+            if run==0:
+                plt.plot(np.arange(0,len(performance_by_tens[itr]),1),
+                        performance_by_tens[itr],
+                        color=colors[itr%len(colors)],label=pattern)
+                # plt.plot(np.arange(0,run+1,1),class_accs[itr],color=colors[itr%len(colors)],label=pattern)
+            else:
+                plt.plot(np.arange(0,len(performance_by_tens[itr]),1),
+                        performance_by_tens[itr],
+                        color=colors[itr%len(colors)])
+                # plt.plot(np.arange(0,run+1,1),class_accs[itr],color=colors[itr%len(colors)])
+            plt.legend(bbox_to_anchor=(1.01,1))
+            plt.subplots_adjust(right=.85)
+        plt.pause(.01)
+
+plt.show()
 for node in nodes:
 
     plt.figure(figsize=(8,4))

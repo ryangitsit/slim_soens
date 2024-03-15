@@ -292,3 +292,10 @@ def check__net(net):
     sizeup_obj(net.nodes[0].dendrite_list[0])
     sizeup_obj(net.nodes[0].synapse_list[0])
     print("\n")
+
+def no_ties(digit,spikes):
+    sub = np.array(spikes) - spikes[digit] 
+    if sum(n > 0 for n in sub) == 0 and sum(n == 0 for n in sub) == 1:
+        return True
+    else:
+        return False
