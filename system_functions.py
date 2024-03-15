@@ -254,6 +254,18 @@ def make_inputs(letters,spike_time):
         inputs[name]=defined_spikes
     return inputs
 
+def make_repeated_inputs(letters,spike_time,repeats):
+
+    # make the input spikes for different letters
+    inputs = {}
+    for name, pixels in letters.items():
+        idx = np.where(np.array(letters[name])==1)[0]
+        idx = np.concatenate([idx,idx+len(pixels)])
+        spike_times = np.ones(len(idx))*spike_time
+        defined_spikes=[idx,spike_times]
+        inputs[name]=defined_spikes
+    return inputs
+
 
 def array_to_rows(array,channels):
     rows = [ [] for _ in range(channels) ]
@@ -299,3 +311,14 @@ def no_ties(digit,spikes):
         return True
     else:
         return False
+    
+def count_total_elements(lst):
+    total_elements = 0
+ 
+    for item in lst:
+        if isinstance(item, list) or isinstance(item, np.ndarray):
+            total_elements += count_total_elements(item)
+        else:
+            total_elements += 1
+ 
+    return total_elements

@@ -7,36 +7,11 @@ import sys
 from neuron import Neuron
 from network import Network
 import components
-from plotting import plot_nodes
+from plotting import *
 
 from system_functions import *
 
 #%%
-
-patterns = 5
-letters_all = make_letters(patterns='all')
-
-letters = {}
-for i,(k,v) in enumerate(letters_all.items()):
-    if i < patterns:
-        letters[k] = v
-
-# del letters['|  ']
-# del letters['  |']
-# del letters['_']
-# del letters['[]']
-
-# letters = make_letters(patterns='zvn')
-
-# plot_letters(letters)
-# plot_letters(letters,'v')
-inputs = make_inputs(letters,20)
-
-key_list = list(letters.keys())
-print(len(set( key_list )),key_list)
-keys = '  '.join(key_list)
-classes = len(key_list)
-print(f"classes = {classes}")
 
 def make_rand_weights():
     W = [
@@ -45,6 +20,46 @@ def make_rand_weights():
     ]
     return W
 
+def make_crafted_weights(letter,pixels,symmetry=False):
+    count = 0
+    synaptice_layer = []
+    for i in range(3):
+        group = []
+        for j in range(3):
+            if    symmetry==False:  w=pixels[count]*0.3
+            elif  pixels[count]==0: w=-1*0.3
+            else: w=0.3
+            group.append(w)
+            count+=1
+        synaptice_layer.append(group)
+
+    W = [
+    [np.random.rand(3)],
+    synaptice_layer
+    ]
+    return W
+
+def make_hybrid_weights(letter,pixels,symmetry=False):
+    count = 0
+    synaptice_layer = []
+    for i in range(3):
+        group = []
+        for j in range(3):
+            if    symmetry==False:  w=pixels[count]*0.3
+            elif  pixels[count]==0: w=-1*0.3
+            else: w=0.3
+            group.append(w)
+            count+=1
+        synaptice_layer.append(group)
+
+    W = [
+    [np.random.rand(2)],
+    np.random.rand(2,3),
+    np.concatenate([synaptice_layer,np.random.rand(3,3)])
+    ]
+    for w in W:
+        print(f"{w} -> {len(w)} \n")
+    return W
 
 def make_update(node,error,eta,offmax):
     for i,dend in enumerate(node.dendrite_list):
@@ -67,29 +82,75 @@ plotting    = False
 realtimeplt = False
 printing    = False
 
-eta        = 0.0005
+eta        = 0.005
 fan_fact   = 2
 max_offset = 0.4
 
 fans = np.arange(0,6,1)
 offs = [0,.25,.5]
 
-plt.style.use('seaborn-muted')
+weight_type = 'hybrid'
+
+plt.style.use('seaborn-v0_8-muted')
 colors = plt.rcParams["axes.prop_cycle"].by_key()["color"]
+
+patterns = 3
+letters_all = make_letters(patterns='all')
+
+letters = {}
+for i,(k,v) in enumerate(letters_all.items()):
+    if i < patterns:
+        letters[k] = v
+
+# del letters['|  ']
+# del letters['  |']
+# del letters['_']
+# del letters['[]']
+
+# letters = make_letters(patterns='zvn')
+
+# plot_letters(letters)
+        
+inputs = make_inputs(letters,20)
+key_list = list(letters.keys())
+print(len(set( key_list )),key_list)
+keys = '  '.join(key_list)
+classes = len(key_list)
+print(f"classes = {classes}")
+
+
+if weight_type == 'hyrbid':
+    inputs = make_repeated_inputs(letters,20,2)
+else:
+    inputs = make_inputs(letters,20)
 
 np.random.seed(10)
 nodes = []
 for i,(k,v) in enumerate(letters.items()):
-    print(i,k)
-    
+
+    if weight_type == 'random':
+        weights = make_rand_weights()
+    elif weight_type == 'crafted':
+        weights = make_hybrid_weights(k,v)
+    elif weight_type == 'hybrid':
+        print("HERE")
+        weights = make_hybrid_weights(k,v)
+
     neuron = Neuron(
         name='node_'+k,
         threshold = 0.25,
-        weights=make_rand_weights(),
+        weights=weights,
         )
+    if i == 0: 
+        dims = [2]
+        for w  in weights:
+            dims.append(count_total_elements(w))
+        print(dims)
+        graph_adjacency(neuron.adjacency,dims)
     neuron.normalize_fanin(fanin_factor=fan_fact)
     nodes.append(neuron)
 
+#%%
 accs=[]
 class_accs = [[] for _ in range(classes)]
 class_successes = np.zeros(classes)
@@ -179,17 +240,32 @@ for run in range(runs):
             plt.subplots_adjust(right=.85)
         plt.pause(.01)
 
-plt.show()
+
+#%%
+# plt.show()
 for node in nodes:
 
-    plt.figure(figsize=(8,4))
-    plt.title(f"Update Trajectory of {node.name} Arbor")
+    plt.figure(figsize=(9,4))
+    plt.title(f"Update Trajectory of {node.name} Arbor",fontsize=16)
     for dend in node.dendrite_list:
-        if hasattr(dend,'update_traj'):
-            if isinstance(dend,components.Soma): lw = 4
-            else: lw = 2 
-            plt.plot(dend.update_traj,linewidth=lw,label=dend.name)
+        if hasattr(dend,'update_traj') and 'ref' not in dend.name:
+            if isinstance(dend,components.Soma): 
+                lw = 4
+                c = colors[0]
+                line='solid'
+            elif int(dend.name[-5])==1:
+                c = colors[3] 
+                lw = 2 
+                line = 'dashed'
+            else:
+                c = colors[1] 
+                lw = 1   
+                line = 'dotted'
+            plt.plot(dend.update_traj,linewidth=lw,linestyle=line,label=dend.name)
+
     plt.legend(bbox_to_anchor=(1.01,1))
+    plt.xlabel("Updates",fontsize=14)
+    plt.ylabel("Flux Offset",fontsize=14)
     plt.tight_layout()
     plt.show()
 

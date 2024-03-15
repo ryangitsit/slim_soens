@@ -39,7 +39,7 @@ def plot_nodes(
         flux  = True,
         ):
 
-    plt.style.use('seaborn-muted')
+    plt.style.use('seaborn-v0_8-muted')
     colors = plt.rcParams["axes.prop_cycle"].by_key()["color"]
 
     fig,ax = plt.subplots(len(nodes),1,figsize=(8,2*len(nodes)), sharex=True)
@@ -64,4 +64,35 @@ def plot_nodes(
     plt.tight_layout()
     plt.subplots_adjust(bottom=.125)
     plt.subplots_adjust(left=.125,right=.95,top=.9)
+    plt.show()
+
+def plot_letters(letters,letter=None):
+    import matplotlib.cm as cm
+    import matplotlib.pyplot as plt
+    fig, axs = plt.subplots(1, len(letters),figsize=(8,6))
+    for  j,(name,pixels) in enumerate(letters.items()):
+        arrays = [[] for i in range(3)]
+        count = 0
+        for col in range(3):
+            for row in range(3):
+                arrays[col].append(pixels[count])
+                count+=1
+        pixels = np.array(arrays).reshape(3,3)
+
+        axs[j].set_xticks([])
+        axs[j].set_yticks([])
+        axs[j].set_title(name,fontsize=14)
+
+        if letter==name:
+            axs[j].imshow(
+                pixels,
+                interpolation='nearest',
+                cmap=cm.Oranges
+                )
+        else:
+            axs[j].imshow(
+                pixels,
+                interpolation='nearest',
+                cmap=cm.Blues
+                )
     plt.show()
