@@ -50,7 +50,7 @@ def initialize_synapses(node,tf,dt,time_steps):
 
     for syn in node.synapse_list:
         syn.flux = np.zeros((time_steps,))
-        for spk_t in syn.spike_times:
+        for spk_t in syn.spike_times[syn.spike_times<=tf]:
 
             add_spike(syn,spk_t,dt,tf)
 
@@ -59,7 +59,7 @@ def initialize_dendrites(node,tf,dt,time_steps):
     Docstring
     """
     for dend in node.dendrite_list:
-        dend.flux   = np.ones((time_steps,))*dend.offset_flux
+        dend.flux   = np.ones((time_steps,))*dend.flux_offset
         dend.signal = np.zeros((time_steps,))
 
 def find_phi_th(val,A,B):
@@ -116,11 +116,13 @@ def update_soma(soma,ref,t,dt,d_tau,tf):
     if t >= soma.quiescence:
         if soma.signal[t] >= soma.threshold:
             soma.signal[t+1] = 0
-            if t+10/dt < tf:
+            spk_t = t+soma.abs_ref/dt
+            if spk_t < tf:
+                soma.spikes.append(spk_t)
                 for syn in soma.outgoing:
-                    add_spike(syn,t+10/dt,dt,len(soma.signal))
+                    add_spike(syn,spk_t,dt,len(soma.signal))
                 add_spike(ref,t+1,dt,len(soma.signal))
-            soma.quiescence = t+10/dt
+            soma.quiescence = spk_t
         else:
             update_signal(soma,t,dt,d_tau)
     return soma
@@ -174,7 +176,7 @@ def run_slim_soens_multi(net):
         # for n in range(len(net.nodes)):
         #     net.nodes.append(return_dict[f'neuron_{n}'])
 
-        del(thrds)
+        # del(thrds)
 
     t = time_steps-1
     for node in net.nodes:

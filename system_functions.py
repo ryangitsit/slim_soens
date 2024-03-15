@@ -261,3 +261,34 @@ def array_to_rows(array,channels):
         rows[int(array[0][i])].append(array[1][i])
     return rows
 
+def sizeup_obj(obj):
+    import sys
+    print(f"Size of {type(obj)} object = {sys.getsizeof(obj)}")
+    for i,(k,v) in enumerate(obj.__dict__.items()):
+        print(f"  {k}  -->  {sys.getsizeof(v)}")
+    print("\n")
+
+def clear_net(net):
+    # import time
+    # t1 = time.perf_counter()
+    for node in net.nodes:
+        node.dend_soma.spikes = []
+        node.dend_soma.quiescence = 0
+        for dend in node.dendrite_list:
+            dend.signal = np.array([])
+            dend.flux   = np.array([])
+
+        for syn in node.synapse_list:
+            syn.flux        = np.array([])
+            syn.spike_times = np.array([])
+    del(net)
+    # t2 = time.perf_counter()
+    # print(f"Time to clear network = {np.round(t2-t1,5)}")
+
+def check__net(net):
+    print(dir(),"\n")
+    sizeup_obj(net)
+    sizeup_obj(net.nodes[0])
+    sizeup_obj(net.nodes[0].dendrite_list[0])
+    sizeup_obj(net.nodes[0].synapse_list[0])
+    print("\n")

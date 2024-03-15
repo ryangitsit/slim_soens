@@ -116,7 +116,7 @@ def update_soma(soma,ref,t,dt,d_tau,tf):
     if t >= soma.quiescence:
         if soma.signal[t] >= soma.threshold:
             soma.signal[t+1] = 0
-            spk_t = t+10/dt
+            spk_t = t+soma.abs_ref/dt
             if spk_t < tf:
                 soma.spikes.append(spk_t)
                 for syn in soma.outgoing:

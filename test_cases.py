@@ -21,7 +21,7 @@ def main():
         [np.random.rand(10)],
         [np.random.rand(10) for _ in range(10)],
         [np.random.rand(10) for _ in range(100)],
-        [np.random.rand(10) for _ in range(1000)]
+        # [np.random.rand(10) for _ in range(1000)]
     ]
     t2 = time.perf_counter()
     print(f"Time to conjur weights = {np.round(t2-t1,2)}")

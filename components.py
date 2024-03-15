@@ -98,6 +98,7 @@ class Soma(Dendrite):
         self.threshold  = 0.5
         self.quiescence = 0
         self.spikes     = []
+        self.abs_ref    = 10
         self.__dict__.update(params)
         
     def __del__(self):

@@ -58,7 +58,7 @@ def main():
 
 
     t1 = time.perf_counter()
-    net = Network(nodes=[neuron,neuron_2],run_simulation=True,multithreading=False,duration=50)
+    net = Network(nodes=[neuron,neuron_2],run_simulation=True,multithreading=True,duration=50)
     t2 = time.perf_counter()
     print(f"Run time = {t2-t1}")
 
