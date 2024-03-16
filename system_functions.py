@@ -91,7 +91,10 @@ def get_attr(obj,attr):
     """
     Docstring
     """
-    return obj.__dict__[attr]
+    if hasattr(obj,attr):
+        return obj.__dict__[attr]
+    else:
+        return None
 
 def attr_map(obj_list,attr):
     """
@@ -322,3 +325,18 @@ def count_total_elements(lst):
             total_elements += 1
  
     return total_elements
+
+def mutual_inhibition(nodes,inhibition_strengh):
+    from components import Synapse
+    for i,node in enumerate(nodes):
+        syn = Synapse(**{'dend_name':node.dend_soma.name}) 
+        syn.outgoing.append(node.dend_soma)
+        node.dend_soma.incoming.append((syn,inhibition_strengh))
+        node.synapse_list.append(syn)
+
+    for i,node_send in enumerate(nodes):
+        for j,node_receive in enumerate(nodes):
+            if i!=j:
+                node_send.dend_soma.outgoing.append(node_receive.synapse_list[-1])
+                node_receive.synapse_list[-1].incoming.append((node_send.dend_soma,1))
+    

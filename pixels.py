@@ -7,11 +7,12 @@ import sys
 from neuron import Neuron
 from network import Network
 import components
-from plotting import *
 
+from plotting import *
 from system_functions import *
 
 #%%
+
 
 def make_rand_weights():
     W = [
@@ -57,27 +58,39 @@ def make_hybrid_weights(letter,pixels,symmetry=False):
     np.random.rand(2,3),
     np.concatenate([synaptice_layer,np.random.rand(3,3)])
     ]
-    for w in W:
-        print(f"{w} -> {len(w)} \n")
-    return W
+
+    arbor_params = [
+        [[{'update':True} if weight!=np.abs(0.3) else {'update':False}
+            for w,weight in enumerate(group)] for g,group in enumerate(layer)
+        ]
+        for l,layer in enumerate(W)]
+    return W, arbor_params
+
+def update_offset(dend,error,eta,offmax):
+    update = np.mean(dend.signal)*error*eta
+    dend.flux_offset += update
+    if offmax==0: offmax = dend.phi_th
+    if dend.flux_offset > 0:
+        dend.flux_offset = np.min([dend.flux_offset, offmax])
+    elif dend.flux_offset < 0:
+        dend.flux_offset = np.max([dend.flux_offset, -1*offmax/2])
+    dend.update_traj.append(dend.flux_offset)
 
 def make_update(node,error,eta,offmax):
     for i,dend in enumerate(node.dendrite_list):
         if not hasattr(dend,'update_traj'): dend.update_traj = []
-        if 'ref' not in dend.name and 'soma' not in dend.name:
-            update = np.mean(dend.signal)*error*eta
-            dend.flux_offset += update
-            if offmax==0: offmax = dend.phi_th
-            if dend.flux_offset > 0:
-                dend.flux_offset = np.min([dend.flux_offset, offmax])
-            elif dend.flux_offset < 0:
-                dend.flux_offset = np.max([dend.flux_offset, -1*offmax/2])
-            dend.update_traj.append(dend.flux_offset)
-    
+        if (not isinstance(dend,components.Refractory) 
+            and not isinstance(dend,components.Soma)):
+            if hasattr(dend,'update'):
+                if dend.update==True:
+                    update_offset(dend,error,eta,offmax)
+            else:
+                update_offset(dend,error,eta,offmax)
+            
 
-runs        = 1000
+runs        = 250
 duration    = 250
-print_mod   = 10000
+print_mod   = 50
 plotting    = False
 realtimeplt = False
 printing    = False
@@ -89,12 +102,14 @@ max_offset = 0.4
 fans = np.arange(0,6,1)
 offs = [0,.25,.5]
 
-weight_type = 'hybrid'
+# weight_type = 'hybrid'
+# weight_type = 'random'
+weight_type = 'crafted'
 
 plt.style.use('seaborn-v0_8-muted')
 colors = plt.rcParams["axes.prop_cycle"].by_key()["color"]
 
-patterns = 3
+patterns = 8
 letters_all = make_letters(patterns='all')
 
 letters = {}
@@ -130,25 +145,33 @@ for i,(k,v) in enumerate(letters.items()):
 
     if weight_type == 'random':
         weights = make_rand_weights()
+        arbor_params = None
     elif weight_type == 'crafted':
-        weights = make_hybrid_weights(k,v)
+        weights = make_crafted_weights(k,v)
+        arbor_params = None
     elif weight_type == 'hybrid':
-        print("HERE")
-        weights = make_hybrid_weights(k,v)
+        weights,arbor_params = make_hybrid_weights(k,v)
 
     neuron = Neuron(
         name='node_'+k,
         threshold = 0.25,
         weights=weights,
+        arbor_params=arbor_params,
         )
-    if i == 0: 
+    if i >= 0: 
+        print(k)
         dims = [2]
         for w  in weights:
             dims.append(count_total_elements(w))
         print(dims)
-        graph_adjacency(neuron.adjacency,dims)
+        # graph_adjacency(neuron.adjacency,dims)
     neuron.normalize_fanin(fanin_factor=fan_fact)
     nodes.append(neuron)
+
+
+# mutual_inhibition(nodes,-0.3)
+
+print_attrs(nodes[0].dendrite_list,['name','update'])
 
 #%%
 accs=[]
@@ -236,7 +259,7 @@ for run in range(runs):
                         performance_by_tens[itr],
                         color=colors[itr%len(colors)])
                 # plt.plot(np.arange(0,run+1,1),class_accs[itr],color=colors[itr%len(colors)])
-            plt.legend(bbox_to_anchor=(1.01,1))
+            # plt.legend(bbox_to_anchor=(1.01,1))
             plt.subplots_adjust(right=.85)
         plt.pause(.01)
 
@@ -263,7 +286,7 @@ for node in nodes:
                 line = 'dotted'
             plt.plot(dend.update_traj,linewidth=lw,linestyle=line,label=dend.name)
 
-    plt.legend(bbox_to_anchor=(1.01,1))
+    # plt.legend(bbox_to_anchor=(1.01,1))
     plt.xlabel("Updates",fontsize=14)
     plt.ylabel("Flux Offset",fontsize=14)
     plt.tight_layout()

@@ -14,10 +14,18 @@ class Neuron():
         self.name       = f"Neuron_{self.id}"
         Neuron.next_id += 1
 
-        self.weights = [[[]]]
+        self.weights      = [[[]]]
+        self.arbor_params = None
+
         self.synaptic_strength = 1
 
         self.__dict__.update(params)
+
+        if self.arbor_params is None:
+            self.arbor_params = [
+                [[{} for w,weight in enumerate(group)] 
+                for g,group in enumerate(layer)]
+                for l,layer in enumerate(self.weights)]
 
         self.dendrite_list = []
 
@@ -55,9 +63,8 @@ class Neuron():
         """
         Docstring
         """
-        dend_params = {}
         self.dendrite_list += [
-            self.make_dend(l+1,g,d,dend_params)
+            self.make_dend(l+1,g,d,self.arbor_params[l][g][d])
             for l,layer in enumerate(self.weights)
             for g,group in enumerate(layer)
             for d,dend in enumerate(group)
