@@ -27,9 +27,9 @@ def make_crafted_weights(letter,pixels,symmetry=False):
     for i in range(3):
         group = []
         for j in range(3):
-            if    symmetry==False:  w=pixels[count]*0.3
-            elif  pixels[count]==0: w=-1*0.3
-            else: w=0.3
+            if    symmetry==False:  w=pixels[count]
+            elif  pixels[count]==0: w=-1
+            else: w=1
             group.append(w)
             count+=1
         synaptice_layer.append(group)
@@ -38,6 +38,7 @@ def make_crafted_weights(letter,pixels,symmetry=False):
     [np.random.rand(3)],
     synaptice_layer
     ]
+    print(W)
     return W
 
 def make_hybrid_weights(letter,pixels,symmetry=False):
@@ -99,8 +100,6 @@ eta        = 0.005
 fan_fact   = 2
 max_offset = 0.4
 
-fans = np.arange(0,6,1)
-offs = [0,.25,.5]
 
 # weight_type = 'hybrid'
 # weight_type = 'random'
@@ -109,7 +108,7 @@ weight_type = 'crafted'
 plt.style.use('seaborn-v0_8-muted')
 colors = plt.rcParams["axes.prop_cycle"].by_key()["color"]
 
-patterns = 8
+patterns = 9
 letters_all = make_letters(patterns='all')
 
 letters = {}
@@ -147,7 +146,7 @@ for i,(k,v) in enumerate(letters.items()):
         weights = make_rand_weights()
         arbor_params = None
     elif weight_type == 'crafted':
-        weights = make_crafted_weights(k,v)
+        weights = make_crafted_weights(k,v,symmetry=True)
         arbor_params = None
     elif weight_type == 'hybrid':
         weights,arbor_params = make_hybrid_weights(k,v)
@@ -165,11 +164,13 @@ for i,(k,v) in enumerate(letters.items()):
             dims.append(count_total_elements(w))
         print(dims)
         # graph_adjacency(neuron.adjacency,dims)
-    neuron.normalize_fanin(fanin_factor=fan_fact)
+    neuron.normalize_fanin_symmetric(fanin_factor=1)
     nodes.append(neuron)
 
 
 # mutual_inhibition(nodes,-0.3)
+
+print_attrs(nodes[0].dendrite_list,['name','incoming'])
 
 print_attrs(nodes[0].dendrite_list,['name','update'])
 

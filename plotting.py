@@ -41,29 +41,45 @@ def plot_nodes(
 
     plt.style.use('seaborn-v0_8-muted')
     colors = plt.rcParams["axes.prop_cycle"].by_key()["color"]
+    if type(nodes)==list and len(nodes)>1:
+        fig,ax = plt.subplots(len(nodes),1,figsize=(8,2*len(nodes)), sharex=True)
+        for i,node in enumerate(nodes):
+            if i == 0:
+                ax[i].plot(node.dend_soma.signal,linewidth=4,color=colors[0],label="somatic signal")
+                if flux==True: 
+                    ax[i].plot(node.dend_soma.flux,'--',linewidth=2,color=colors[1],label="somatic flux")
+                if ref==True:  
+                    ax[i].plot(node.dend_ref.signal,':',linewidth=1,color=colors[2],label="refractory signal")
+            else:
+                ax[i].plot(node.dend_soma.signal,linewidth=4,color=colors[0])
+                if flux==True: ax[i].plot(node.dend_soma.flux,'--',linewidth=2,color=colors[1])
+                if ref==True:  ax[i].plot(node.dend_ref.signal,':',linewidth=1,color=colors[2])
+            ax[i].set_title(node.name)
+        
+        if title is not None:
+            fig.text(0.525, 0.95, title, ha='center',fontsize=18)
+        fig.text(0.5, 0.05, 'Time (ns)', ha='center', fontsize=14)
+        fig.text(0.05, 0.5, 'Unitless Signal and Flux', va='center', rotation='vertical', fontsize=14)
+        fig.legend(bbox_to_anchor=(1,1))
+        plt.tight_layout()
+        plt.subplots_adjust(bottom=.125)
+        plt.subplots_adjust(left=.125,right=.95,top=.9)
+    else:
+        if type(nodes)==list: node = nodes[0]
+        else: node = nodes
+        plt.figure(figsize=(8,4))
+        plt.plot(node.dend_soma.signal,linewidth=4,color=colors[0],label="somatic signal")
+        if flux==True: 
+            plt.plot(node.dend_soma.flux,'--',linewidth=2,color=colors[1],label="somatic flux")
+        if ref==True:  
+            plt.plot(node.dend_ref.signal,':',linewidth=1,color=colors[2],label="refractory signal")
 
-    fig,ax = plt.subplots(len(nodes),1,figsize=(8,2*len(nodes)), sharex=True)
-    for i,node in enumerate(nodes):
-        if i == 0:
-            ax[i].plot(node.dend_soma.signal,linewidth=4,color=colors[0],label="somatic signal")
-            if flux==True: 
-                ax[i].plot(node.dend_soma.flux,'--',linewidth=2,color=colors[1],label="somatic flux")
-            if ref==True:  
-                ax[i].plot(node.dend_ref.signal,':',linewidth=1,color=colors[2],label="refractory signal")
-        else:
-            ax[i].plot(node.dend_soma.signal,linewidth=4,color=colors[0])
-            if flux==True: ax[i].plot(node.dend_soma.flux,'--',linewidth=2,color=colors[1])
-            if ref==True:  ax[i].plot(node.dend_ref.signal,':',linewidth=1,color=colors[2])
-        ax[i].set_title(node.name)
-    
-    if title is not None:
-        fig.text(0.525, 0.95, title, ha='center',fontsize=18)
-    fig.text(0.5, 0.05, 'Time (ns)', ha='center', fontsize=14)
-    fig.text(0.05, 0.5, 'Unitless Signal and Flux', va='center', rotation='vertical', fontsize=14)
-    fig.legend(bbox_to_anchor=(1,1))
-    plt.tight_layout()
-    plt.subplots_adjust(bottom=.125)
-    plt.subplots_adjust(left=.125,right=.95,top=.9)
+        plt.title(node.name, fontsize=16)
+        plt.subplots_adjust(bottom=.125)
+        
+        plt.xlabel('Time (ns)', fontsize=14)
+        plt.ylabel('Unitless Signal and Flux',fontsize=14)
+
     plt.show()
 
 def plot_letters(letters,letter=None):

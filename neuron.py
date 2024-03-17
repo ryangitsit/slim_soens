@@ -156,6 +156,39 @@ class Neuron():
                     for i in range(len(dend.incoming)) 
                     if not isinstance(dend.incoming[0],components.Refractory)
                     ]
+                
+    def normalize_fanin_symmetric(self,fanin_factor=1):
+        max_phi_received = 0.5
+        max_s = 0.72
+        for dend in self.dendrite_list:
+
+            input_sum   = 0
+            input_sum_negative = 0
+            for indend,w in dend.incoming:
+                if (isinstance(indend,components.Dendrite) 
+                    and not isinstance(indend,components.Refractory)): 
+                    if w > 0:
+                        input_sum+=max_s*w
+                    else:
+                        input_sum_negative+=max_s*w
+            # print(dend.name,input_sum,input_sum_negative)
+            if input_sum > max_phi_received:
+                norm_ratio = fanin_factor*max_phi_received/input_sum
+                [
+                    self.change_weight(dend,i,norm_ratio) 
+                    for i in range(len(dend.incoming)) 
+                    if not isinstance(dend.incoming[i][0],components.Refractory)
+                    and dend.incoming[i][1] > 0
+                    ]
+            if np.abs(input_sum_negative) > max_phi_received:
+                norm_ratio_neg = fanin_factor*max_phi_received/np.abs(input_sum_negative)
+                [
+                    self.change_weight(dend,i,norm_ratio_neg) 
+                    for i in range(len(dend.incoming)) 
+                    if not isinstance(dend.incoming[i][0],components.Refractory)
+                    and dend.incoming[i][1] < 0
+                    ]
+
 
 
 
