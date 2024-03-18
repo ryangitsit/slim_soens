@@ -38,7 +38,6 @@ def make_crafted_weights(letter,pixels,symmetry=False):
     [np.random.rand(3)],
     synaptice_layer
     ]
-    print(W)
     return W
 
 def make_hybrid_weights(letter,pixels,symmetry=False):
@@ -89,12 +88,12 @@ def make_update(node,error,eta,offmax):
                 update_offset(dend,error,eta,offmax)
             
 
-runs        = 250
+runs        = 1000
 duration    = 250
-print_mod   = 50
+print_mod   = 1
 plotting    = False
 realtimeplt = False
-printing    = False
+printing    = True
 
 eta        = 0.005
 fan_fact   = 2
@@ -108,7 +107,7 @@ weight_type = 'crafted'
 plt.style.use('seaborn-v0_8-muted')
 colors = plt.rcParams["axes.prop_cycle"].by_key()["color"]
 
-patterns = 9
+patterns = 3
 letters_all = make_letters(patterns='all')
 
 letters = {}
@@ -158,11 +157,10 @@ for i,(k,v) in enumerate(letters.items()):
         arbor_params=arbor_params,
         )
     if i >= 0: 
-        print(k)
         dims = [2]
         for w  in weights:
             dims.append(count_total_elements(w))
-        print(dims)
+        # print(dims)
         # graph_adjacency(neuron.adjacency,dims)
     neuron.normalize_fanin_symmetric(fanin_factor=1)
     nodes.append(neuron)
@@ -170,9 +168,9 @@ for i,(k,v) in enumerate(letters.items()):
 
 # mutual_inhibition(nodes,-0.3)
 
-print_attrs(nodes[0].dendrite_list,['name','incoming'])
+# print_attrs(nodes[0].dendrite_list,['name','incoming'])
 
-print_attrs(nodes[0].dendrite_list,['name','update'])
+# print_attrs(nodes[0].dendrite_list,['name','update'])
 
 #%%
 accs=[]
@@ -234,9 +232,9 @@ for run in range(runs):
                 plot_nodes(nodes,title=f"Pattern {letter}")
 
         clear_net(net)
-    if success==classes:
-        print(f"Converget at run {run}!")
-        break
+    # if success==classes:
+    #     print(f"Converget at run {run}!")
+    #     break
     acc = success/seen
     accs.append(acc)
     s2 = time.perf_counter()
@@ -264,7 +262,7 @@ for run in range(runs):
             plt.subplots_adjust(right=.85)
         plt.pause(.01)
 
-
+print("\n")
 #%%
 # plt.show()
 for node in nodes:
