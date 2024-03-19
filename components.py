@@ -63,6 +63,10 @@ class Dendrite():
         # dynamic parameters
         self.flux_offset = 0
 
+        # for rollover counting
+        self.high_roll = 0
+        self.low_roll  = 0
+
         # connections
         self.outgoing = []
         self.incoming = []

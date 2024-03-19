@@ -66,8 +66,18 @@ def make_hybrid_weights(letter,pixels,symmetry=False):
         for l,layer in enumerate(W)]
     return W, arbor_params
 
-def update_offset(dend,error,eta,offmax):
-    update = np.mean(dend.signal)*error*eta
+# def update_offset(dend,error,eta,offmax):
+#     update = np.mean(dend.signal)*error*eta
+#     dend.flux_offset += update
+#     if offmax==0: offmax = dend.phi_th
+#     if dend.flux_offset > 0:
+#         dend.flux_offset = np.min([dend.flux_offset, offmax])
+#     elif dend.flux_offset < 0:
+#         dend.flux_offset = np.max([dend.flux_offset, -1*offmax/2])
+#     dend.update_traj.append(dend.flux_offset)
+
+def update_offset(dend,update,offmax):
+    # print("here")
     dend.flux_offset += update
     if offmax==0: offmax = dend.phi_th
     if dend.flux_offset > 0:
@@ -78,49 +88,77 @@ def update_offset(dend,error,eta,offmax):
 
 def make_update(node,error,eta,offmax):
     for i,dend in enumerate(node.dendrite_list):
+        if np.any(dend.flux>0.5):  dend.high_roll += 1
+        if np.any(dend.flux<-0.5): dend.low_roll  += 1
         if not hasattr(dend,'update_traj'): dend.update_traj = []
         if (not isinstance(dend,components.Refractory) 
             and not isinstance(dend,components.Soma)):
             if hasattr(dend,'update'):
                 if dend.update==True:
-                    update_offset(dend,error,eta,offmax)
+                    update = np.mean(dend.signal)*error*eta
+                    update_offset(dend,update,offmax)
+                    # update_offset(dend,error,eta,offmax)
             else:
-                update_offset(dend,error,eta,offmax)
+                update = np.mean(dend.signal)*error*eta
+                update_offset(dend,update,offmax)
+                # update_offset(dend,error,eta,offmax)
+
+def backpath(node,error,eta,offmax):
+    
+    soma = node.dend_soma
+    if not hasattr(soma,'update_traj'): soma.update_traj = []
+    update = np.mean(soma.signal)*error*eta
+    if node.name == 'node_z':print(node.name, error, np.mean(soma.signal), update)
+    # update_offset(soma,update,offmax)
+    soma.update_traj.append(update)
+    
+    for dend in node.dendrite_list[2:]:
+        if not hasattr(dend,'update_traj'): dend.update_traj = []
+        # print(f"{dend.name} -- {dend.outgoing[0][0].name}")
+        update = np.mean(dend.signal)*dend.outgoing[0][0].update_traj[-1]*dend.outgoing[0][1]
+        if node.name == 'node_z':
+            print(
+                f"{dend.name} -- {dend.outgoing[0][0].name} -- {update} -- {dend.outgoing[0][0].update_traj[-1]} -- {dend.outgoing[0][1]}"
+                )
+        
+
+        update_offset(dend,update,offmax)
+
             
+patterns          = 5
 
-runs        = 1000
-duration    = 250
-print_mod   = 1
-plotting    = False
-realtimeplt = False
-printing    = True
+runs              = 10000
+duration          = 500
+print_mod         = 1
+plotting          = False
+realtimeplt       = False
+printing          = False
+plot_trajectories = True
+print_rolls       = True
 
-eta        = 0.005
+eta        = 0.0005
 fan_fact   = 2
 max_offset = 0.4
+target     = 5
 
 
 # weight_type = 'hybrid'
-# weight_type = 'random'
-weight_type = 'crafted'
+weight_type = 'random'
+# weight_type = 'crafted'
+
+# update_type = 'backpath'
+update_type = 'arbor'
 
 plt.style.use('seaborn-v0_8-muted')
 colors = plt.rcParams["axes.prop_cycle"].by_key()["color"]
 
-patterns = 3
+
 letters_all = make_letters(patterns='all')
 
 letters = {}
 for i,(k,v) in enumerate(letters_all.items()):
     if i < patterns:
         letters[k] = v
-
-# del letters['|  ']
-# del letters['  |']
-# del letters['_']
-# del letters['[]']
-
-# letters = make_letters(patterns='zvn')
 
 # plot_letters(letters)
         
@@ -162,7 +200,8 @@ for i,(k,v) in enumerate(letters.items()):
             dims.append(count_total_elements(w))
         # print(dims)
         # graph_adjacency(neuron.adjacency,dims)
-    neuron.normalize_fanin_symmetric(fanin_factor=1)
+    neuron.normalize_fanin_symmetric(fanin_factor=fan_fact)
+    # neuron.normalize_fanin(fanin_factor=fan_fact)
     nodes.append(neuron)
 
 
@@ -196,7 +235,7 @@ for run in range(runs):
         letter = key_list[i]
 
         targets = np.zeros(classes)
-        targets[i] = 5
+        targets[i] = target
 
         for node in nodes:
             node.add_indexed_spikes(inputs[letter])
@@ -224,7 +263,10 @@ for run in range(runs):
         # print(class_accs)
         seen += 1
         for n,node in enumerate(nodes):
-            make_update(node,errors[n],eta,max_offset)
+            if update_type == 'arbor':
+                make_update(node,errors[n],eta,max_offset)
+            elif update_type == 'backpath':
+                backpath(node,errors[n],eta,max_offset)
 
         if print_run==True: 
             print(f"{run} -- {letter} --> {pred}   {outputs}  --  {errors}")
@@ -232,9 +274,9 @@ for run in range(runs):
                 plot_nodes(nodes,title=f"Pattern {letter}")
 
         clear_net(net)
-    # if success==classes:
-    #     print(f"Converget at run {run}!")
-    #     break
+    if success==classes:
+        print(f"Converget at run {run}!")
+        break
     acc = success/seen
     accs.append(acc)
     s2 = time.perf_counter()
@@ -263,37 +305,43 @@ for run in range(runs):
         plt.pause(.01)
 
 print("\n")
+
+if print_rolls == True:
+    for node in nodes:
+        print_attrs(node.dendrite_list,["name","high_roll","low_roll"])
 #%%
 # plt.show()
-for node in nodes:
 
-    plt.figure(figsize=(9,4))
-    plt.title(f"Update Trajectory of {node.name} Arbor",fontsize=16)
-    for dend in node.dendrite_list:
-        if hasattr(dend,'update_traj') and 'ref' not in dend.name:
-            if isinstance(dend,components.Soma): 
-                lw = 4
-                c = colors[0]
-                line='solid'
-            elif int(dend.name[-5])==1:
-                c = colors[3] 
-                lw = 2 
-                line = 'dashed'
-            else:
-                c = colors[1] 
-                lw = 1   
-                line = 'dotted'
-            plt.plot(dend.update_traj,linewidth=lw,linestyle=line,label=dend.name)
+if plot_trajectories == True:
+    for node in nodes:
 
-    # plt.legend(bbox_to_anchor=(1.01,1))
-    plt.xlabel("Updates",fontsize=14)
-    plt.ylabel("Flux Offset",fontsize=14)
-    plt.tight_layout()
-    plt.show()
+        plt.figure(figsize=(9,4))
+        plt.title(f"Update Trajectory of {node.name} Arbor",fontsize=16)
+        for dend in node.dendrite_list:
+            if hasattr(dend,'update_traj') and 'ref' not in dend.name:
+                if isinstance(dend,components.Soma): 
+                    lw = 4
+                    c = colors[0]
+                    line='solid'
+                elif int(dend.name[-5])==1:
+                    c = colors[3] 
+                    lw = 2 
+                    line = 'dashed'
+                else:
+                    c = colors[1] 
+                    lw = 1   
+                    line = 'dotted'
+                plt.plot(dend.update_traj,linewidth=lw,linestyle=line,label=dend.name)
+
+        # plt.legend(bbox_to_anchor=(1.01,1))
+        plt.xlabel("Updates",fontsize=14)
+        plt.ylabel("Flux Offset",fontsize=14)
+        plt.tight_layout()
+        plt.show()
 
 
-# loc = "results/games/"
-# picklit(accs,loc,f"accs_{fan}_{offmax}")
-# picklit(class_accs,loc,f"classes_{fan}_{offmax}")
-# picklit(nodes,loc,f"nodes_{fan}_{offmax}")
-# del(nodes)
+    # loc = "results/games/"
+    # picklit(accs,loc,f"accs_{fan}_{offmax}")
+    # picklit(class_accs,loc,f"classes_{fan}_{offmax}")
+    # picklit(nodes,loc,f"nodes_{fan}_{offmax}")
+    # del(nodes)
