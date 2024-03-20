@@ -107,19 +107,26 @@ def backpath(node,error,eta,offmax):
     
     soma = node.dend_soma
     if not hasattr(soma,'update_traj'): soma.update_traj = []
+
     update = np.mean(soma.signal)*error*eta
-    if node.name == 'node_z':print(node.name, error, np.mean(soma.signal), update)
+    # if update < 0: update*=0.8
+        # update = np.random.rand()*.1 #*np.random.choice([-1,1], p=[.5,.5], size=1)[0]
+        # print(soma.name,update)
+    # if node.name == 'node_z':print(node.name, error, np.mean(soma.signal), update)
     # update_offset(soma,update,offmax)
     soma.update_traj.append(update)
     
     for dend in node.dendrite_list[2:]:
+        if np.any(dend.flux>0.5):  dend.high_roll += 1
+        if np.any(dend.flux<-0.5): dend.low_roll  += 1
         if not hasattr(dend,'update_traj'): dend.update_traj = []
         # print(f"{dend.name} -- {dend.outgoing[0][0].name}")
         update = np.mean(dend.signal)*dend.outgoing[0][0].update_traj[-1]*dend.outgoing[0][1]
-        if node.name == 'node_z':
-            print(
-                f"{dend.name} -- {dend.outgoing[0][0].name} -- {update} -- {dend.outgoing[0][0].update_traj[-1]} -- {dend.outgoing[0][1]}"
-                )
+        # if update < 0: update*=0.8
+        # if node.name == 'node_z':
+        #     print(
+        #         f"{dend.name} -- {dend.outgoing[0][0].name} -- {update} -- {dend.outgoing[0][0].update_traj[-1]} -- {dend.outgoing[0][1]}"
+        #         )
         
 
         update_offset(dend,update,offmax)
@@ -127,19 +134,28 @@ def backpath(node,error,eta,offmax):
             
 patterns          = 5
 
-runs              = 10000
-duration          = 500
-print_mod         = 1
+
+runs              = 500
+duration          = 250
+print_mod         = 50
 plotting          = False
 realtimeplt       = False
-printing          = False
+printing          = True
 plot_trajectories = True
 print_rolls       = True
 
-eta        = 0.0005
+
+## for arbor
+# eta        = 0.005
+# fan_fact   = 2
+# max_offset = .4
+# target     = 5
+
+## for backpath
+eta        = 0.05
 fan_fact   = 2
-max_offset = 0.4
-target     = 5
+max_offset = .8
+target     = 20
 
 
 # weight_type = 'hybrid'
@@ -313,10 +329,18 @@ if print_rolls == True:
 # plt.show()
 
 if plot_trajectories == True:
-    for node in nodes:
+    plt.figure(figsize=(8,4))
+    for itr,pattern in enumerate(key_list):
+        plt.plot(np.arange(0,len(performance_by_tens[itr]),1),
+                np.array(performance_by_tens[itr])+.001*itr,
+                color=colors[itr%len(colors)],label=pattern)
+    plt.legend()
+    plt.show()
 
-        plt.figure(figsize=(9,4))
-        plt.title(f"Update Trajectory of {node.name} Arbor",fontsize=16)
+    fig,ax = plt.subplots(len(nodes),1,figsize=(8,2.25*len(nodes)), sharex=True)
+    for n,node in enumerate(nodes):
+
+        ax[n].set_title(f"Update Trajectory of {node.name} Arbor",fontsize=12)
         for dend in node.dendrite_list:
             if hasattr(dend,'update_traj') and 'ref' not in dend.name:
                 if isinstance(dend,components.Soma): 
@@ -331,13 +355,13 @@ if plot_trajectories == True:
                     c = colors[1] 
                     lw = 1   
                     line = 'dotted'
-                plt.plot(dend.update_traj,linewidth=lw,linestyle=line,label=dend.name)
+                ax[n].plot(dend.update_traj,linewidth=lw,linestyle=line,label=dend.name)
 
         # plt.legend(bbox_to_anchor=(1.01,1))
-        plt.xlabel("Updates",fontsize=14)
-        plt.ylabel("Flux Offset",fontsize=14)
-        plt.tight_layout()
-        plt.show()
+        # ax[n].set_x_label("Updates",fontsize=14)
+        # ax[n].set_y_label("Flux Offset",fontsize=14)
+    fig.tight_layout()
+    plt.show()
 
 
     # loc = "results/games/"
