@@ -21,6 +21,13 @@ def make_rand_weights():
     ]
     return W
 
+def make_uniform_weights():
+    W = [
+    [np.ones((3,))],
+    np.ones((3,3))
+    ]
+    return W
+
 def make_crafted_weights(letter,pixels,symmetry=False):
     count = 0
     synaptice_layer = []
@@ -38,6 +45,14 @@ def make_crafted_weights(letter,pixels,symmetry=False):
     [np.random.rand(3)],
     synaptice_layer
     ]
+    return W
+
+def make_double_tree():
+    W = [
+    [np.ones((3,))],
+    np.ones((3,6))
+    ]
+    print(W)
     return W
 
 def make_hybrid_weights(letter,pixels,symmetry=False):
@@ -108,7 +123,11 @@ def backpath(node,error,eta,offmax):
     soma = node.dend_soma
     if not hasattr(soma,'update_traj'): soma.update_traj = []
 
-    update = np.mean(soma.signal)*error*eta
+    if np.any(np.mean(soma.signal)>0): ds = 1
+    else: ds = 0
+    update = ds*error*eta
+    
+    # update = np.mean(soma.signal)*error*eta
     # if update < 0: update*=0.8
         # update = np.random.rand()*.1 #*np.random.choice([-1,1], p=[.5,.5], size=1)[0]
         # print(soma.name,update)
@@ -121,7 +140,12 @@ def backpath(node,error,eta,offmax):
         if np.any(dend.flux<-0.5): dend.low_roll  += 1
         if not hasattr(dend,'update_traj'): dend.update_traj = []
         # print(f"{dend.name} -- {dend.outgoing[0][0].name}")
-        update = np.mean(dend.signal)*dend.outgoing[0][0].update_traj[-1]*dend.outgoing[0][1]
+
+        if np.any(np.mean(dend.signal)>0): ds = 1
+        else: ds = 0
+        update = ds*dend.outgoing[0][0].update_traj[-1]#*dend.outgoing[0][1] #*eta
+
+        # update = np.mean(dend.signal)*dend.outgoing[0][0].update_traj[-1]*dend.outgoing[0][1]
         # if update < 0: update*=0.8
         # if node.name == 'node_z':
         #     print(
@@ -132,38 +156,41 @@ def backpath(node,error,eta,offmax):
         update_offset(dend,update,offmax)
 
             
-patterns          = 5
+patterns          = 6
 
 
-runs              = 500
+runs              = 50
 duration          = 250
 print_mod         = 50
 plotting          = False
 realtimeplt       = False
 printing          = True
 plot_trajectories = True
-print_rolls       = True
+print_rolls       = False
 
 
 ## for arbor
-# eta        = 0.005
-# fan_fact   = 2
-# max_offset = .4
-# target     = 5
+eta        = 0.005
+fan_fact   = 2
+max_offset = .4
+target     = 5
 
 ## for backpath
-eta        = 0.05
-fan_fact   = 2
-max_offset = .8
-target     = 20
+# eta        = 0.0005
+# fan_fact   = 2
+# max_offset = .8
+# target     = 10
 
 
 # weight_type = 'hybrid'
-weight_type = 'random'
+# weight_type = 'random'
 # weight_type = 'crafted'
+weight_type = 'uniform'
+# weight_type = 'doubled'
+offset_radius = 0.15
 
-# update_type = 'backpath'
-update_type = 'arbor'
+update_type = 'backpath'
+# update_type = 'arbor'
 
 plt.style.use('seaborn-v0_8-muted')
 colors = plt.rcParams["axes.prop_cycle"].by_key()["color"]
@@ -186,7 +213,7 @@ classes = len(key_list)
 print(f"classes = {classes}")
 
 
-if weight_type == 'hyrbid':
+if weight_type == 'hybrid' or weight_type=='doubled':
     inputs = make_repeated_inputs(letters,20,2)
 else:
     inputs = make_inputs(letters,20)
@@ -198,11 +225,18 @@ for i,(k,v) in enumerate(letters.items()):
     if weight_type == 'random':
         weights = make_rand_weights()
         arbor_params = None
+    elif weight_type == 'uniform':
+        weights = make_uniform_weights()
+        arbor_params = None
     elif weight_type == 'crafted':
         weights = make_crafted_weights(k,v,symmetry=True)
         arbor_params = None
     elif weight_type == 'hybrid':
         weights,arbor_params = make_hybrid_weights(k,v)
+    elif weight_type == 'doubled':
+        weights = make_double_tree()
+        arbor_params = None
+        
 
     neuron = Neuron(
         name='node_'+k,
@@ -217,6 +251,7 @@ for i,(k,v) in enumerate(letters.items()):
         # print(dims)
         # graph_adjacency(neuron.adjacency,dims)
     neuron.normalize_fanin_symmetric(fanin_factor=fan_fact)
+    if weight_type == 'uniform': neuron.randomize_offsets(offset_radius)
     # neuron.normalize_fanin(fanin_factor=fan_fact)
     nodes.append(neuron)
 
@@ -253,9 +288,11 @@ for run in range(runs):
         targets = np.zeros(classes)
         targets[i] = target
 
+
+
         for node in nodes:
             node.add_indexed_spikes(inputs[letter])
-        
+
         net = Network(
             run_simulation = True,
             nodes          = nodes,
@@ -321,7 +358,7 @@ for run in range(runs):
         plt.pause(.01)
 
 print("\n")
-
+# print_attrs(nodes[0].dendrite_list,["name","incoming","low_roll"])
 if print_rolls == True:
     for node in nodes:
         print_attrs(node.dendrite_list,["name","high_roll","low_roll"])
@@ -355,7 +392,7 @@ if plot_trajectories == True:
                     c = colors[1] 
                     lw = 1   
                     line = 'dotted'
-                ax[n].plot(dend.update_traj,linewidth=lw,linestyle=line,label=dend.name)
+                ax[n].plot(np.array(dend.update_traj),linewidth=lw,linestyle=line,label=dend.name)
 
         # plt.legend(bbox_to_anchor=(1.01,1))
         # ax[n].set_x_label("Updates",fontsize=14)
