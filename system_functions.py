@@ -9,7 +9,7 @@ def weights_to_adjacency(weights):
 
     # initialize adjacency matrix
     adj_mat = np.zeros((side_length,side_length))
-    adj_mat[1][0] = 0.5
+    adj_mat[1][0] = -0.85
     count = 2
     for l,layer in enumerate(weights):
         for g,group in enumerate(layer):

@@ -28,6 +28,27 @@ def make_uniform_weights():
     ]
     return W
 
+def make_doubled_weights():
+    W = [
+    [np.ones((3,))],
+    np.ones((3,3)),
+    [[-1,1] for _ in range(9)]
+    ]
+    arbor_params = [
+        [[{'update_type':'normal'} if weight>0 else {'update':'inverted'}
+            for w,weight in enumerate(group)] for g,group in enumerate(layer)
+        ]
+        for l,layer in enumerate(W)]
+    return W
+
+def make_symmetric_weights(p_neg=.2):
+    W = [
+    [[0.3*np.random.choice([-1,1], p=[p_neg,1-p_neg], size=1)[0] for _ in range(3)]],
+    [[0.3*np.random.choice([-1,1], p=[p_neg,1-p_neg], size=1)[0] for _ in range(3)] for _ in range(3)]
+    ]
+    print(W)
+    return W
+
 def make_crafted_weights(letter,pixels,symmetry=False):
     count = 0
     synaptice_layer = []
@@ -81,18 +102,15 @@ def make_hybrid_weights(letter,pixels,symmetry=False):
         for l,layer in enumerate(W)]
     return W, arbor_params
 
-# def update_offset(dend,error,eta,offmax):
-#     update = np.mean(dend.signal)*error*eta
-#     dend.flux_offset += update
-#     if offmax==0: offmax = dend.phi_th
-#     if dend.flux_offset > 0:
-#         dend.flux_offset = np.min([dend.flux_offset, offmax])
-#     elif dend.flux_offset < 0:
-#         dend.flux_offset = np.max([dend.flux_offset, -1*offmax/2])
-#     dend.update_traj.append(dend.flux_offset)
 
 def update_offset(dend,update,offmax):
     # print("here")
+
+
+    if dend.outgoing[0][1] < 0: 
+        # print("negative update:",dend.name)
+        update*=-1
+
     dend.flux_offset += update
     if offmax==0: offmax = dend.phi_th
     if dend.flux_offset > 0:
@@ -143,6 +161,7 @@ def backpath(node,error,eta,offmax):
 
         if np.any(np.mean(dend.signal)>0): ds = 1
         else: ds = 0
+
         update = ds*dend.outgoing[0][0].update_traj[-1]#*dend.outgoing[0][1] #*eta
 
         # update = np.mean(dend.signal)*dend.outgoing[0][0].update_traj[-1]*dend.outgoing[0][1]
@@ -152,14 +171,12 @@ def backpath(node,error,eta,offmax):
         #         f"{dend.name} -- {dend.outgoing[0][0].name} -- {update} -- {dend.outgoing[0][0].update_traj[-1]} -- {dend.outgoing[0][1]}"
         #         )
         
-
         update_offset(dend,update,offmax)
 
             
-patterns          = 6
+patterns          = 3
 
-
-runs              = 50
+runs              = 200
 duration          = 250
 print_mod         = 50
 plotting          = False
@@ -170,27 +187,31 @@ print_rolls       = False
 
 
 ## for arbor
-eta        = 0.005
-fan_fact   = 2
-max_offset = .4
-target     = 5
+# eta        = 0.005
+# fan_fact   = 2
+# max_offset = .4
+# target     = 5
 
 ## for backpath
-# eta        = 0.0005
-# fan_fact   = 2
-# max_offset = .8
-# target     = 10
+eta        = 0.0005
+fan_fact   = 2
+max_offset = .8
+target     = 10
 
+mutual_inh = 0
 
 # weight_type = 'hybrid'
 # weight_type = 'random'
 # weight_type = 'crafted'
 weight_type = 'uniform'
 # weight_type = 'doubled'
+# weight_type = 'symmetric'
+# weight_type = 'double_dends'
 offset_radius = 0.15
 
 update_type = 'backpath'
 # update_type = 'arbor'
+doubled=False
 
 plt.style.use('seaborn-v0_8-muted')
 colors = plt.rcParams["axes.prop_cycle"].by_key()["color"]
@@ -228,6 +249,9 @@ for i,(k,v) in enumerate(letters.items()):
     elif weight_type == 'uniform':
         weights = make_uniform_weights()
         arbor_params = None
+    elif weight_type == 'symmetric':
+        weights = make_symmetric_weights(p_neg=0.3)
+        arbor_params = None
     elif weight_type == 'crafted':
         weights = make_crafted_weights(k,v,symmetry=True)
         arbor_params = None
@@ -235,6 +259,10 @@ for i,(k,v) in enumerate(letters.items()):
         weights,arbor_params = make_hybrid_weights(k,v)
     elif weight_type == 'doubled':
         weights = make_double_tree()
+        arbor_params = None
+    elif weight_type == 'double_dends':
+        doubled=True
+        weights = make_doubled_weights()
         arbor_params = None
         
 
@@ -244,21 +272,25 @@ for i,(k,v) in enumerate(letters.items()):
         weights=weights,
         arbor_params=arbor_params,
         )
+
     if i >= 0: 
         dims = [2]
         for w  in weights:
             dims.append(count_total_elements(w))
         # print(dims)
         # graph_adjacency(neuron.adjacency,dims)
+            
     neuron.normalize_fanin_symmetric(fanin_factor=fan_fact)
-    if weight_type == 'uniform': neuron.randomize_offsets(offset_radius)
-    # neuron.normalize_fanin(fanin_factor=fan_fact)
+
+    if weight_type != 'crafted': neuron.randomize_offsets(offset_radius)
+
     nodes.append(neuron)
 
 
-# mutual_inhibition(nodes,-0.3)
+if mutual_inh != 0:
+    mutual_inhibition(nodes,mutual_inh)
 
-# print_attrs(nodes[0].dendrite_list,['name','incoming'])
+print_attrs(nodes[0].dendrite_list,['name','incoming'])
 
 # print_attrs(nodes[0].dendrite_list,['name','update'])
 
@@ -288,10 +320,8 @@ for run in range(runs):
         targets = np.zeros(classes)
         targets[i] = target
 
-
-
         for node in nodes:
-            node.add_indexed_spikes(inputs[letter])
+            node.add_indexed_spikes(inputs[letter],doubled=doubled)
 
         net = Network(
             run_simulation = True,
@@ -313,8 +343,9 @@ for run in range(runs):
             tenth_samples[i]+=1
         class_accs[i].append(class_successes[i]/(run+1))
         if run%10==0: performance_by_tens[i].append(tenth_samples[i]/10)
-        # print(class_accs)
         seen += 1
+
+
         for n,node in enumerate(nodes):
             if update_type == 'arbor':
                 make_update(node,errors[n],eta,max_offset)
@@ -324,22 +355,24 @@ for run in range(runs):
         if print_run==True: 
             print(f"{run} -- {letter} --> {pred}   {outputs}  --  {errors}")
             if plotting == True:
-                plot_nodes(nodes,title=f"Pattern {letter}")
-
+                plot_nodes(nodes,title=f"Pattern {letter}",dendrites=True)
+        
         clear_net(net)
+
     if success==classes:
         print(f"Converget at run {run}!")
         break
+
     acc = success/seen
     accs.append(acc)
     s2 = time.perf_counter()
+
     if printing==True:
         if print_run==True: 
             print(f"Run performance:  {np.round(acc,2)}   Run time = {np.round(s2-s1,2)}")
             print("\n=============")
     else:
         print(f"Run {run} performance:  {np.round(acc,2)}   Run time = {np.round(s2-s1,2)}",end="\r")
-
 
     if realtimeplt==True:
         for itr,pattern in enumerate(key_list):

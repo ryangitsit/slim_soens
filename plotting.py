@@ -25,18 +25,32 @@ def graph_adjacency(W,dims):
 
     for i,row in enumerate(W): 
         for j,val in enumerate(row): 
-            if val > 0: G.add_edge(i,j)
+            if val != 0: G.add_edge(i,j, weight=val)
             
+    epositive = [(u, v) for (u, v, d) in G.edges(data=True) if d["weight"] > 0]
+    enegative = [(u, v) for (u, v, d) in G.edges(data=True) if d["weight"] < 0] 
+    labels = {}    
+    for node in G.nodes():
+        labels[node] = node
     pos=nx.get_node_attributes(G,'pos')
-    nx.draw(G,pos,with_labels = True,node_size = 250) 
+    # nx.draw(G,pos,with_labels = True,node_size = 250) 
+    nx.draw_networkx_nodes(G, pos, node_size=250)
+    nx.draw_networkx_labels(G,pos,labels,font_size=10,font_color='black')
+    nx.draw_networkx_edges(
+        G, pos, edgelist=epositive, width=2, alpha=0.5, edge_color="black", 
+    )
+    nx.draw_networkx_edges(
+        G, pos, edgelist=enegative, width=2, alpha=0.5, edge_color="black", style="dashed"
+    )
     plt.show() 
     del(G)
 
 def plot_nodes(
         nodes,
-        title = None,
-        ref   = True,
-        flux  = True,
+        title     = None,
+        ref       = True,
+        flux      = True,
+        dendrites = False,
         ):
 
     plt.style.use('seaborn-v0_8-muted')
@@ -54,8 +68,14 @@ def plot_nodes(
                 ax[i].plot(node.dend_soma.signal,linewidth=4,color=colors[0])
                 if flux==True: ax[i].plot(node.dend_soma.flux,'--',linewidth=2,color=colors[1])
                 if ref==True:  ax[i].plot(node.dend_ref.signal,':',linewidth=1,color=colors[2])
+
+            if dendrites==True:
+                for dend in node.dendrite_list[:2]:
+                    plt.plot(dend.signal,'--',linewidth=1)
+
             ax[i].set_title(node.name)
-        
+
+
         if title is not None:
             fig.text(0.525, 0.95, title, ha='center',fontsize=18)
         fig.text(0.5, 0.05, 'Time (ns)', ha='center', fontsize=14)
