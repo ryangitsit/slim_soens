@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import time
 import sys
+sys.path.append('../')
 
 from neuron import Neuron
 from network import Network
@@ -28,6 +29,12 @@ def make_uniform_weights():
     ]
     return W
 
+def make_hifan_weights():
+    W = [
+    [np.ones((9,))],
+    ]
+    return W
+
 def make_doubled_weights():
     W = [
     [np.ones((3,))],
@@ -41,9 +48,20 @@ def make_doubled_weights():
         for l,layer in enumerate(W)]
     return W
 
+
+def make_extended_doubled_weights():
+    W = [
+    [np.ones((3,))],
+    np.ones((3,6)),
+    [[-1,1] for _ in range(18)]
+    ]
+
+    return W
+
 def make_symmetric_weights(p_neg=.2):
     W = [
-    [[0.3*np.random.choice([-1,1], p=[p_neg,1-p_neg], size=1)[0] for _ in range(3)]],
+    [np.random.rand(3)],
+    # [[0.3*np.random.choice([-1,1], p=[p_neg,1-p_neg], size=1)[0] for _ in range(3)]],
     [[0.3*np.random.choice([-1,1], p=[p_neg,1-p_neg], size=1)[0] for _ in range(3)] for _ in range(3)]
     ]
     print(W)
@@ -73,7 +91,6 @@ def make_double_tree():
     [np.ones((3,))],
     np.ones((3,6))
     ]
-    print(W)
     return W
 
 def make_hybrid_weights(letter,pixels,symmetry=False):
@@ -107,17 +124,35 @@ def update_offset(dend,update,offmax):
     # print("here")
 
 
-    if dend.outgoing[0][1] < 0: 
-        # print("negative update:",dend.name)
-        update*=-1
+    # if dend.outgoing[0][1] < 0: 
+    #     # print("negative update:",dend.name)
+    #     update*=-1
 
     dend.flux_offset += update
     if offmax==0: offmax = dend.phi_th
     if dend.flux_offset > 0:
         dend.flux_offset = np.min([dend.flux_offset, offmax])
     elif dend.flux_offset < 0:
-        dend.flux_offset = np.max([dend.flux_offset, -1*offmax/2])
+        dend.flux_offset = np.max([dend.flux_offset, -1*offmax])
     dend.update_traj.append(dend.flux_offset)
+
+def symmetric_udpater(error,eta,dend,offmax):
+    """
+    Try this for synaptic layer only
+    Play with zero-signal update coefficient
+    """
+    if dend.outgoing[0][1] < 0: 
+        update_sign = -1
+    else:
+        update_sign = 1
+
+    if np.mean(dend.signal) > 0:
+        update = np.mean(dend.signal)*error*eta*update_sign
+
+    else: 
+        update = error*eta*update_sign*-1*.3
+
+    update_offset(dend,update,offmax)
 
 def make_update(node,error,eta,offmax):
     for i,dend in enumerate(node.dendrite_list):
@@ -128,12 +163,18 @@ def make_update(node,error,eta,offmax):
             and not isinstance(dend,components.Soma)):
             if hasattr(dend,'update'):
                 if dend.update==True:
-                    update = np.mean(dend.signal)*error*eta
-                    update_offset(dend,update,offmax)
+                    symmetric_udpater(error,eta,dend,offmax)
+
+                    # update = np.mean(dend.signal)*error*eta
+                    # update_offset(dend,update,offmax)
+
                     # update_offset(dend,error,eta,offmax)
             else:
-                update = np.mean(dend.signal)*error*eta
-                update_offset(dend,update,offmax)
+                symmetric_udpater(error,eta,dend,offmax)
+
+                # update = np.mean(dend.signal)*error*eta
+                # update_offset(dend,update,offmax)
+
                 # update_offset(dend,error,eta,offmax)
 
 def backpath(node,error,eta,offmax):
@@ -173,45 +214,61 @@ def backpath(node,error,eta,offmax):
         
         update_offset(dend,update,offmax)
 
-            
-patterns          = 3
 
-runs              = 200
+# ## for arbor
+# update_type = 'arbor'
+# eta        = 0.005
+# fan_fact   = 2
+# max_offset = .4
+# target     = 2
+# weight_type = 'double_dends'
+# offset_radius = 0.15
+# mutual_inh = 0 #-0.75
+# doubled=False
+            
+patterns          = 6
+
+runs              = 1000
 duration          = 250
 print_mod         = 50
 plotting          = False
 realtimeplt       = False
 printing          = True
-plot_trajectories = True
+plot_trajectories = False
 print_rolls       = False
 
 
 ## for arbor
-# eta        = 0.005
-# fan_fact   = 2
-# max_offset = .4
-# target     = 5
-
-## for backpath
-eta        = 0.0005
+update_type = 'arbor'
+eta        = 0.005
 fan_fact   = 2
-max_offset = .8
-target     = 10
+max_offset = .4
+target     = 2
 
-mutual_inh = 0
+
+
+# ## for backpath
+# update_type = 'backpath'
+# eta        = 0.0005
+# fan_fact   = 2
+# max_offset = .8
+# target     = 10
+
+offset_radius = 0.15
+mutual_inh = 0 #-0.75
+doubled=False
 
 # weight_type = 'hybrid'
 # weight_type = 'random'
 # weight_type = 'crafted'
-weight_type = 'uniform'
-# weight_type = 'doubled'
+# weight_type = 'uniform'
+weight_type = 'doubled'
 # weight_type = 'symmetric'
 # weight_type = 'double_dends'
-offset_radius = 0.15
+# weight_type = 'extended_double_dends'
+# weight_type = 'hifan'
 
-update_type = 'backpath'
-# update_type = 'arbor'
-doubled=False
+
 
 plt.style.use('seaborn-v0_8-muted')
 colors = plt.rcParams["axes.prop_cycle"].by_key()["color"]
@@ -234,7 +291,7 @@ classes = len(key_list)
 print(f"classes = {classes}")
 
 
-if weight_type == 'hybrid' or weight_type=='doubled':
+if weight_type == 'hybrid' or weight_type=='doubled' or weight_type=='extended_double_dends':
     inputs = make_repeated_inputs(letters,20,2)
 else:
     inputs = make_inputs(letters,20)
@@ -249,8 +306,11 @@ for i,(k,v) in enumerate(letters.items()):
     elif weight_type == 'uniform':
         weights = make_uniform_weights()
         arbor_params = None
+    elif weight_type == 'hifan':
+        weights = make_hifan_weights()
+        arbor_params = None
     elif weight_type == 'symmetric':
-        weights = make_symmetric_weights(p_neg=0.3)
+        weights = make_symmetric_weights(p_neg=0.33)
         arbor_params = None
     elif weight_type == 'crafted':
         weights = make_crafted_weights(k,v,symmetry=True)
@@ -263,6 +323,10 @@ for i,(k,v) in enumerate(letters.items()):
     elif weight_type == 'double_dends':
         doubled=True
         weights = make_doubled_weights()
+        arbor_params = None
+    elif weight_type == 'extended_double_dends':
+        doubled=True
+        weights = make_extended_doubled_weights()
         arbor_params = None
         
 
@@ -290,7 +354,7 @@ for i,(k,v) in enumerate(letters.items()):
 if mutual_inh != 0:
     mutual_inhibition(nodes,mutual_inh)
 
-print_attrs(nodes[0].dendrite_list,['name','incoming'])
+# print_attrs(nodes[0].dendrite_list,['name','incoming'])
 
 # print_attrs(nodes[0].dendrite_list,['name','update'])
 
@@ -352,9 +416,9 @@ for run in range(runs):
             elif update_type == 'backpath':
                 backpath(node,errors[n],eta,max_offset)
 
-        if print_run==True: 
+        if print_run==True or success==classes: 
             print(f"{run} -- {letter} --> {pred}   {outputs}  --  {errors}")
-            if plotting == True:
+            if plotting == True or success==classes:
                 plot_nodes(nodes,title=f"Pattern {letter}",dendrites=True)
         
         clear_net(net)
@@ -399,13 +463,13 @@ if print_rolls == True:
 # plt.show()
 
 if plot_trajectories == True:
-    plt.figure(figsize=(8,4))
-    for itr,pattern in enumerate(key_list):
-        plt.plot(np.arange(0,len(performance_by_tens[itr]),1),
-                np.array(performance_by_tens[itr])+.001*itr,
-                color=colors[itr%len(colors)],label=pattern)
-    plt.legend()
-    plt.show()
+    # plt.figure(figsize=(8,4))
+    # for itr,pattern in enumerate(key_list):
+    #     plt.plot(np.arange(0,len(performance_by_tens[itr]),1),
+    #             np.array(performance_by_tens[itr])+.001*itr,
+    #             color=colors[itr%len(colors)],label=pattern)
+    # plt.legend()
+    # plt.show()
 
     fig,ax = plt.subplots(len(nodes),1,figsize=(8,2.25*len(nodes)), sharex=True)
     for n,node in enumerate(nodes):
@@ -417,7 +481,7 @@ if plot_trajectories == True:
                     lw = 4
                     c = colors[0]
                     line='solid'
-                elif int(dend.name[-5])==1:
+                elif int(dend.name[dend.name.find("d_")+2])==1:
                     c = colors[3] 
                     lw = 2 
                     line = 'dashed'

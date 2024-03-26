@@ -76,7 +76,6 @@ class Neuron():
         Docstring
         """
         dend_names = [*map(self.get_dend_name,self.dendrite_list)]
-        print(dend_names)
         self.dend_dict = dict(zip(dend_names,self.dendrite_list))
         
 

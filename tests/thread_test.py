@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import timeit
 import time
 import sys
+sys.path.append('../')
 
 from neuron import Neuron
 from network import Network
