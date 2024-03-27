@@ -141,16 +141,19 @@ def symmetric_udpater(error,eta,dend,offmax):
     Try this for synaptic layer only
     Play with zero-signal update coefficient
     """
-    if dend.outgoing[0][1] < 0: 
-        update_sign = -1
+    if dend.loc[0]==3:
+        if dend.outgoing[0][1] < 0: 
+            update_sign = -1
+        else:
+            update_sign = 1
+
+        if np.mean(dend.signal) > 0:
+            update = np.mean(dend.signal)*error*eta*update_sign
+
+        else: 
+            update = error*eta*update_sign*-1*.3
     else:
-        update_sign = 1
-
-    if np.mean(dend.signal) > 0:
-        update = np.mean(dend.signal)*error*eta*update_sign
-
-    else: 
-        update = error*eta*update_sign*-1*.3
+        update = np.mean(dend.signal)*error*eta
 
     update_offset(dend,update,offmax)
 
@@ -226,7 +229,7 @@ def backpath(node,error,eta,offmax):
 # mutual_inh = 0 #-0.75
 # doubled=False
             
-patterns          = 6
+patterns          = 10
 
 runs              = 1000
 duration          = 250
@@ -255,17 +258,17 @@ target     = 2
 # target     = 10
 
 offset_radius = 0.15
-mutual_inh = 0 #-0.75
+mutual_inh = -0.75
 doubled=False
 
 # weight_type = 'hybrid'
 # weight_type = 'random'
 # weight_type = 'crafted'
 # weight_type = 'uniform'
-weight_type = 'doubled'
+# weight_type = 'doubled'
 # weight_type = 'symmetric'
 # weight_type = 'double_dends'
-# weight_type = 'extended_double_dends'
+weight_type = 'extended_double_dends'
 # weight_type = 'hifan'
 
 
