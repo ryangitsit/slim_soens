@@ -12,7 +12,6 @@ import components
 from plotting import *
 from system_functions import *
 
-#%%
 
 
 def make_rand_weights():
@@ -218,254 +217,310 @@ def backpath(node,error,eta,offmax):
         update_offset(dend,update,offmax)
 
 
+# # ## for arbor
+# # update_type = 'arbor'
+# # eta        = 0.005
+# # fan_fact   = 2
+# # max_offset = .4
+# # target     = 2
+# # weight_type = 'double_dends'
+# # offset_radius = 0.15
+# # mutual_inh = 0 #-0.75
+# # doubled=False
+            
+# patterns          = 10
+
+# runs              = 1000
+# duration          = 250
+# print_mod         = 50
+# plotting          = False
+# realtimeplt       = False
+# printing          = True
+# plot_trajectories = False
+# print_rolls       = False
+
+
 # ## for arbor
 # update_type = 'arbor'
 # eta        = 0.005
 # fan_fact   = 2
 # max_offset = .4
 # target     = 2
-# weight_type = 'double_dends'
+
+
+
+# # ## for backpath
+# # update_type = 'backpath'
+# # eta        = 0.0005
+# # fan_fact   = 2
+# # max_offset = .8
+# # target     = 10
+
 # offset_radius = 0.15
-# mutual_inh = 0 #-0.75
+# mutual_inh = -0.75
 # doubled=False
+
+# # weight_type = 'hybrid'
+# # weight_type = 'random'
+# # weight_type = 'crafted'
+# # weight_type = 'uniform'
+# # weight_type = 'doubled'
+# # weight_type = 'symmetric'
+# # weight_type = 'double_dends'
+# weight_type = 'extended_double_dends'
+# # weight_type = 'hifan'
+
+
+
+# plt.style.use('seaborn-v0_8-muted')
+# colors = plt.rcParams["axes.prop_cycle"].by_key()["color"]
+
+def make_dataset(**config):
+    letters_all = make_letters(patterns='all')
+    letters = {}
+    for i,(k,v) in enumerate(letters_all.items()):
+        if i < config["patterns"]:
+            letters[k] = v
+
+    # plot_letters(letters)
             
-patterns          = 10
+    config["key_list"] = key_list = list(letters.keys())
+    config["keys"]     = '  '.join(key_list)
 
-runs              = 1000
-duration          = 250
-print_mod         = 50
-plotting          = False
-realtimeplt       = False
-printing          = True
-plot_trajectories = False
-print_rolls       = False
+    weight_type = config["weight_type"]
+    if (weight_type    == 'hybrid' 
+        or weight_type == 'doubled' 
+        or weight_type == 'extended_double_dends'):
+        inputs = make_repeated_inputs(letters,20,2)
+    else:
+        inputs = make_inputs(letters,20)
+
+    return config, letters, inputs
+
+def make_nodes(letters,**config):
+    weight_type = config["weight_type"]
+    np.random.seed(10)
+
+    nodes = []
+    for i,(k,v) in enumerate(letters.items()):
+
+        if weight_type == 'random':
+            weights = make_rand_weights()
+            arbor_params = None
+        elif weight_type == 'uniform':
+            weights = make_uniform_weights()
+            arbor_params = None
+        elif weight_type == 'hifan':
+            weights = make_hifan_weights()
+            arbor_params = None
+        elif weight_type == 'symmetric':
+            weights = make_symmetric_weights(p_neg=0.33)
+            arbor_params = None
+        elif weight_type == 'crafted':
+            weights = make_crafted_weights(k,v,symmetry=True)
+            arbor_params = None
+        elif weight_type == 'hybrid':
+            weights,arbor_params = make_hybrid_weights(k,v)
+        elif weight_type == 'doubled':
+            weights = make_double_tree()
+            arbor_params = None
+        elif weight_type == 'double_dends':
+            config["doubled"]=True
+            weights = make_doubled_weights()
+            arbor_params = None
+        elif weight_type == 'extended_double_dends':
+            config["doubled"]=True
+            weights = make_extended_doubled_weights()
+            arbor_params = None
+            
+        neuron = Neuron(
+            name='node_'+k,
+            threshold = 0.25,
+            weights=weights,
+            arbor_params=arbor_params,
+            )
+
+        # if i >= 0: 
+        #     dims = [2]
+        #     for w  in weights:
+        #         dims.append(count_total_elements(w))
+        #     print(dims)
+        #     graph_adjacency(neuron.adjacency,dims)
+                
+        neuron.normalize_fanin_symmetric(fanin_factor=config["fan_fact"])
+
+        if weight_type != 'crafted': neuron.randomize_offsets(config["offset_radius"])
+
+        nodes.append(neuron)
+
+        if config["mutual_inh"] != 0:
+            mutual_inhibition(nodes,config["mutual_inh"])
+
+    return nodes, config
 
 
-## for arbor
-update_type = 'arbor'
-eta        = 0.005
-fan_fact   = 2
-max_offset = .4
-target     = 2
+
+def learn(nodes,inputs,**config):
 
 
-
-# ## for backpath
-# update_type = 'backpath'
-# eta        = 0.0005
-# fan_fact   = 2
-# max_offset = .8
-# target     = 10
-
-offset_radius = 0.15
-mutual_inh = -0.75
-doubled=False
-
-# weight_type = 'hybrid'
-# weight_type = 'random'
-# weight_type = 'crafted'
-# weight_type = 'uniform'
-# weight_type = 'doubled'
-# weight_type = 'symmetric'
-# weight_type = 'double_dends'
-weight_type = 'extended_double_dends'
-# weight_type = 'hifan'
+    accs=[]
+    class_accs      = [[] for _ in range(config["patterns"])]
+    class_successes = np.zeros(config["patterns"])
 
 
+    for run in range(config["runs"]):
 
-plt.style.use('seaborn-v0_8-muted')
-colors = plt.rcParams["axes.prop_cycle"].by_key()["color"]
+        s1 = time.perf_counter()
 
+        if run%config["print_mod"] == 0 and config["printing"]==True: print_run = True
+        else: print_run = False
 
-letters_all = make_letters(patterns='all')
-
-letters = {}
-for i,(k,v) in enumerate(letters_all.items()):
-    if i < patterns:
-        letters[k] = v
-
-# plot_letters(letters)
-        
-inputs = make_inputs(letters,20)
-key_list = list(letters.keys())
-print(len(set( key_list )),key_list)
-keys = '  '.join(key_list)
-classes = len(key_list)
-print(f"classes = {classes}")
+        if print_run==True:
+            print(f"Run {run}")
+            print(" "*(14+len(str(run))),config["keys"])
 
 
-if weight_type == 'hybrid' or weight_type=='doubled' or weight_type=='extended_double_dends':
-    inputs = make_repeated_inputs(letters,20,2)
-else:
-    inputs = make_inputs(letters,20)
+        shuffled = np.arange(0,config["patterns"],1)
+        np.random.shuffle(shuffled)
+        success = 0
+        seen = 0
+        for i in shuffled:
+            letter = config["key_list"][i]
 
+            targets = np.zeros(config["patterns"])
+            targets[i] = config["target"]
+
+            for node in nodes:
+                node.add_indexed_spikes(inputs[letter],doubled=config["doubled"])
+
+            net = Network(
+                run_simulation = True,
+                nodes          = nodes,
+                duration       = config["duration"],
+            )
+
+            outputs = []
+            for nd in range(config["patterns"]):
+                outputs.append(len(nodes[nd].dend_soma.spikes))
+
+            pred_idx = np.argmax(outputs)
+            pred = config["key_list"][pred_idx]
+            errors = targets - outputs
+
+            if no_ties(i,outputs) == True: 
+                success += 1
+                class_successes[i]+=1
+            class_accs[i].append(class_successes[i]/(run+1))
+            seen += 1
+
+
+            for n,node in enumerate(nodes):
+                if config["update_type"] == 'arbor':
+                    make_update(node,errors[n],config["eta"],config["max_offset"])
+                elif config["update_type"] == 'backpath':
+                    backpath(node,errors[n],config["eta"],config["max_offset"])
+
+            if print_run==True or success==config["patterns"]: 
+                print(f"{run} -- {letter} --> {pred}   {outputs}  --  {errors}")
+                if config["plotting"] == True:
+                    plot_nodes(nodes,title=f"Pattern {letter}",dendrites=True)
+                    plot_synapse_inversions(nodes)
+
+                if success==config["patterns"]:
+                    print(f"Converged at run {run}!")
+                    plot_nodes(nodes,title=f"Pattern {letter}",dendrites=True)
+                    plot_synapse_inversions(nodes)
+                    return nodes
+                    
+            clear_net(net)
+
+        if success==config["patterns"]:
+            print(f"Converget at run {run}!")
+            break
+
+        acc = success/seen
+        accs.append(acc)
+        s2 = time.perf_counter()
+
+        if config["printing"]==True:
+            if print_run==True: 
+                print(f"Run performance:  {np.round(acc,2)}   Run time = {np.round(s2-s1,2)}")
+                print("\n=============")
+        else:
+            print(f"Run {run} performance:  {np.round(acc,2)}   Run time = {np.round(s2-s1,2)}",end="\r")
+
+    return nodes
+
+
+config = {
+    "patterns"          : 4,
+    "runs"              : 1000,
+    "duration"          : 250,
+    "print_mod"         : 1,
+    "plotting"          : False,
+    "realtimeplt"       : False,
+    "printing"          : True,
+    "plot_trajectories" : False,
+    "print_rolls"       : False,
+
+    ### for arbor
+    "update_type"       : 'arbor',
+    "eta"               : 0.005,
+    "fan_fact"          : 2,
+    "max_offset"        : .4,
+    "target"            : 2,
+
+
+    ### for backpath
+    #"update_type"      : 'backpath',
+    #"eta"              : 0.0005,
+    #"fan_fact"         : 2,
+    #"max_offset"       : .8,
+    #"target"           : 10,
+
+    "offset_radius"     : 0.15,
+    "mutual_inh"        : -0.75,
+    "doubled"           : False,
+
+    # "weight_type"     : 'hybrid',
+    # "weight_type"     : 'random',
+    # "weight_type"     : 'crafted',
+    # "weight_type"     : 'uniform',
+    # "weight_type"     : 'doubled',
+    # "weight_type"     : 'symmetric',
+    "weight_type"     : 'double_dends',
+    # "weight_type"       : 'extended_double_dends',
+    # "weight_type"     : 'hifan',
+
+
+}
 np.random.seed(10)
-nodes = []
-for i,(k,v) in enumerate(letters.items()):
-
-    if weight_type == 'random':
-        weights = make_rand_weights()
-        arbor_params = None
-    elif weight_type == 'uniform':
-        weights = make_uniform_weights()
-        arbor_params = None
-    elif weight_type == 'hifan':
-        weights = make_hifan_weights()
-        arbor_params = None
-    elif weight_type == 'symmetric':
-        weights = make_symmetric_weights(p_neg=0.33)
-        arbor_params = None
-    elif weight_type == 'crafted':
-        weights = make_crafted_weights(k,v,symmetry=True)
-        arbor_params = None
-    elif weight_type == 'hybrid':
-        weights,arbor_params = make_hybrid_weights(k,v)
-    elif weight_type == 'doubled':
-        weights = make_double_tree()
-        arbor_params = None
-    elif weight_type == 'double_dends':
-        doubled=True
-        weights = make_doubled_weights()
-        arbor_params = None
-    elif weight_type == 'extended_double_dends':
-        doubled=True
-        weights = make_extended_doubled_weights()
-        arbor_params = None
-        
-
-    neuron = Neuron(
-        name='node_'+k,
-        threshold = 0.25,
-        weights=weights,
-        arbor_params=arbor_params,
-        )
-
-    if i >= 0: 
-        dims = [2]
-        for w  in weights:
-            dims.append(count_total_elements(w))
-        # print(dims)
-        # graph_adjacency(neuron.adjacency,dims)
-            
-    neuron.normalize_fanin_symmetric(fanin_factor=fan_fact)
-
-    if weight_type != 'crafted': neuron.randomize_offsets(offset_radius)
-
-    nodes.append(neuron)
-
-
-if mutual_inh != 0:
-    mutual_inhibition(nodes,mutual_inh)
+config, letters, inputs = make_dataset(**config)
+nodes, config           = make_nodes(letters,**config)
+nodes                   = learn(nodes,inputs,**config)
 
 # print_attrs(nodes[0].dendrite_list,['name','incoming'])
-
 # print_attrs(nodes[0].dendrite_list,['name','update'])
 
 #%%
-accs=[]
-class_accs = [[] for _ in range(classes)]
-class_successes = np.zeros(classes)
-performance_by_tens = [[] for _ in range(classes)] 
-for run in range(runs):
-    if run%10==0: tenth_samples = np.zeros(classes)
-    s1 = time.perf_counter()
-
-    if run%print_mod == 0 and printing==True: print_run = True
-    else: print_run = False
-
-    if print_run==True:
-        print(f"Run {run}")
-        print(" "*(14+len(str(run))),keys)
-
-    shuffled = np.arange(0,classes,1)
-    np.random.shuffle(shuffled)
-    success = 0
-    seen = 0
-    for i in shuffled:
-        letter = key_list[i]
-
-        targets = np.zeros(classes)
-        targets[i] = target
-
-        for node in nodes:
-            node.add_indexed_spikes(inputs[letter],doubled=doubled)
-
-        net = Network(
-            run_simulation = True,
-            nodes          = nodes,
-            duration       = duration,
-        )
-
-        outputs = []
-        for nd in range(classes):
-            outputs.append(len(nodes[nd].dend_soma.spikes))
-
-        pred_idx = np.argmax(outputs)
-        pred = key_list[pred_idx]
-        errors = targets - outputs
-
-        if no_ties(i,outputs) == True: 
-            success += 1
-            class_successes[i]+=1
-            tenth_samples[i]+=1
-        class_accs[i].append(class_successes[i]/(run+1))
-        if run%10==0: performance_by_tens[i].append(tenth_samples[i]/10)
-        seen += 1
+node = nodes[7]
 
 
-        for n,node in enumerate(nodes):
-            if update_type == 'arbor':
-                make_update(node,errors[n],eta,max_offset)
-            elif update_type == 'backpath':
-                backpath(node,errors[n],eta,max_offset)
+# for node in nodes:
+#     print(node.name)
 
-        if print_run==True or success==classes: 
-            print(f"{run} -- {letter} --> {pred}   {outputs}  --  {errors}")
-            if plotting == True or success==classes:
-                plot_nodes(nodes,title=f"Pattern {letter}",dendrites=True)
-        
-        clear_net(net)
 
-    if success==classes:
-        print(f"Converget at run {run}!")
-        break
-
-    acc = success/seen
-    accs.append(acc)
-    s2 = time.perf_counter()
-
-    if printing==True:
-        if print_run==True: 
-            print(f"Run performance:  {np.round(acc,2)}   Run time = {np.round(s2-s1,2)}")
-            print("\n=============")
-    else:
-        print(f"Run {run} performance:  {np.round(acc,2)}   Run time = {np.round(s2-s1,2)}",end="\r")
-
-    if realtimeplt==True:
-        for itr,pattern in enumerate(key_list):
-            if run==0:
-                plt.plot(np.arange(0,len(performance_by_tens[itr]),1),
-                        performance_by_tens[itr],
-                        color=colors[itr%len(colors)],label=pattern)
-                # plt.plot(np.arange(0,run+1,1),class_accs[itr],color=colors[itr%len(colors)],label=pattern)
-            else:
-                plt.plot(np.arange(0,len(performance_by_tens[itr]),1),
-                        performance_by_tens[itr],
-                        color=colors[itr%len(colors)])
-                # plt.plot(np.arange(0,run+1,1),class_accs[itr],color=colors[itr%len(colors)])
-            # plt.legend(bbox_to_anchor=(1.01,1))
-            plt.subplots_adjust(right=.85)
-        plt.pause(.01)
-
+# plot_synapse_inversions(nodes)
+#%%
 print("\n")
 # print_attrs(nodes[0].dendrite_list,["name","incoming","low_roll"])
-if print_rolls == True:
+if config["print_rolls"] == True:
     for node in nodes:
         print_attrs(node.dendrite_list,["name","high_roll","low_roll"])
 #%%
 # plt.show()
 
-if plot_trajectories == True:
+if config["plot_trajectories"] == True:
     # plt.figure(figsize=(8,4))
     # for itr,pattern in enumerate(key_list):
     #     plt.plot(np.arange(0,len(performance_by_tens[itr]),1),

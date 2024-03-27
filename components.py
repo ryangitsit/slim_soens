@@ -119,6 +119,7 @@ class Refractory(Dendrite):
         super().__init__()
         neuron_name = params["neuron_name"]
         self.name   = f"{neuron_name}_dend_ref"
+        self.loc        = (0,0,1)
         self.__dict__.update(params)
 
     def __del__(self):

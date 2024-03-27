@@ -134,3 +134,56 @@ def plot_letters(letters,letter=None):
                 cmap=cm.Blues
                 )
     plt.show()
+
+def plot_synapse_inversions(nodes):
+    fig,ax = plt.subplots(len(nodes),1,figsize=(6,2.25*len(nodes))) #,sharex=True)
+    for n,node in enumerate(nodes):
+        neg_syns = []
+        pos_syns = []
+
+        active_pos = []
+        inactive_pos = []
+
+        active_neg = []
+        inactive_neg= []
+
+        active_syns=0
+        for i,dend in enumerate(node.dendrite_list):
+            if dend.loc[0]==3:
+
+                if np.mean(dend.signal) > 0: 
+                    active_syns +=1
+                    if dend.outgoing[0][1] < 0:
+                        neg_syns.append(np.min(dend.flux))
+                        # plt.plot(dend.signal,'--')
+                        active_neg.append(np.min(dend.flux))
+
+                    else:
+                        active_pos.append(np.min(dend.flux))
+                        pos_syns.append(np.min(dend.flux))
+                        # plt.plot(dend.signal)
+                else:
+                    if dend.outgoing[0][1] < 0:
+                        neg_syns.append(np.min(dend.flux))
+                        inactive_neg.append(np.min(dend.flux))
+
+                    else:
+                        pos_syns.append(np.min(dend.flux))
+                        inactive_pos.append(np.min(dend.flux))
+
+                    
+        # print(active_syns)
+        # plt.plot(node.dend_soma.signal,linewidth=4)
+        # plt.show()
+
+
+        ax[n].hist(active_neg,color='r'  ,bins=30)
+        ax[n].hist(active_pos,color='g'  ,bins=30)
+
+        ax[n].hist(inactive_neg,color='r',bins=30,alpha=0.3)
+        ax[n].hist(inactive_pos,color='g',bins=30,alpha=0.3)
+        ax[n].set_title(node.name,y=.75,x=.3)
+        if n==7: ax[n].set_facecolor('lightgrey')
+        # plt.hist(neg_syns,color='r',bins=50,alpha=0.3)
+        # plt.hist(pos_syns,color='g',bins=50,alpha=0.3)
+    plt.show()
