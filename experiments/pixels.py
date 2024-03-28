@@ -9,271 +9,14 @@ from neuron import Neuron
 from network import Network
 import components
 
+from weight_structures import *
+from learning_rules import *
 from plotting import *
 from system_functions import *
+from argparser import setup_argument_parser
 
 
 
-def make_rand_weights():
-    W = [
-    [np.random.rand(3)],
-    np.random.rand(3,3)
-    ]
-    return W
-
-def make_uniform_weights():
-    W = [
-    [np.ones((3,))],
-    np.ones((3,3))
-    ]
-    return W
-
-def make_hifan_weights():
-    W = [
-    [np.ones((9,))],
-    ]
-    return W
-
-def make_doubled_weights():
-    W = [
-    [np.ones((3,))],
-    np.ones((3,3)),
-    [[-1,1] for _ in range(9)]
-    ]
-    arbor_params = [
-        [[{'update_type':'normal'} if weight>0 else {'update':'inverted'}
-            for w,weight in enumerate(group)] for g,group in enumerate(layer)
-        ]
-        for l,layer in enumerate(W)]
-    return W
-
-
-def make_extended_doubled_weights():
-    W = [
-    [np.ones((3,))],
-    np.ones((3,6)),
-    [[-1,1] for _ in range(18)]
-    ]
-
-    return W
-
-def make_symmetric_weights(p_neg=.2):
-    W = [
-    [np.random.rand(3)],
-    # [[0.3*np.random.choice([-1,1], p=[p_neg,1-p_neg], size=1)[0] for _ in range(3)]],
-    [[0.3*np.random.choice([-1,1], p=[p_neg,1-p_neg], size=1)[0] for _ in range(3)] for _ in range(3)]
-    ]
-    print(W)
-    return W
-
-def make_crafted_weights(letter,pixels,symmetry=False):
-    count = 0
-    synaptice_layer = []
-    for i in range(3):
-        group = []
-        for j in range(3):
-            if    symmetry==False:  w=pixels[count]
-            elif  pixels[count]==0: w=-1
-            else: w=1
-            group.append(w)
-            count+=1
-        synaptice_layer.append(group)
-
-    W = [
-    [np.random.rand(3)],
-    synaptice_layer
-    ]
-    return W
-
-def make_double_tree():
-    W = [
-    [np.ones((3,))],
-    np.ones((3,6))
-    ]
-    return W
-
-def make_hybrid_weights(letter,pixels,symmetry=False):
-    count = 0
-    synaptice_layer = []
-    for i in range(3):
-        group = []
-        for j in range(3):
-            if    symmetry==False:  w=pixels[count]*0.3
-            elif  pixels[count]==0: w=-1*0.3
-            else: w=0.3
-            group.append(w)
-            count+=1
-        synaptice_layer.append(group)
-
-    W = [
-    [np.random.rand(2)],
-    np.random.rand(2,3),
-    np.concatenate([synaptice_layer,np.random.rand(3,3)])
-    ]
-
-    arbor_params = [
-        [[{'update':True} if weight!=np.abs(0.3) else {'update':False}
-            for w,weight in enumerate(group)] for g,group in enumerate(layer)
-        ]
-        for l,layer in enumerate(W)]
-    return W, arbor_params
-
-
-def update_offset(dend,update,offmax):
-    # print("here")
-
-
-    # if dend.outgoing[0][1] < 0: 
-    #     # print("negative update:",dend.name)
-    #     update*=-1
-
-    dend.flux_offset += update
-    if offmax==0: offmax = dend.phi_th
-    if dend.flux_offset > 0:
-        dend.flux_offset = np.min([dend.flux_offset, offmax])
-    elif dend.flux_offset < 0:
-        dend.flux_offset = np.max([dend.flux_offset, -1*offmax])
-    dend.update_traj.append(dend.flux_offset)
-
-def symmetric_udpater(error,eta,dend,offmax):
-    """
-    Try this for synaptic layer only
-    Play with zero-signal update coefficient
-    """
-    if dend.loc[0]==3:
-        if dend.outgoing[0][1] < 0: 
-            update_sign = -1
-        else:
-            update_sign = 1
-
-        if np.mean(dend.signal) > 0:
-            update = np.mean(dend.signal)*error*eta*update_sign
-
-        else: 
-            update = error*eta*update_sign*-1*.3
-    else:
-        update = np.mean(dend.signal)*error*eta
-
-    update_offset(dend,update,offmax)
-
-def make_update(node,error,eta,offmax):
-    for i,dend in enumerate(node.dendrite_list):
-        if np.any(dend.flux>0.5):  dend.high_roll += 1
-        if np.any(dend.flux<-0.5): dend.low_roll  += 1
-        if not hasattr(dend,'update_traj'): dend.update_traj = []
-        if (not isinstance(dend,components.Refractory) 
-            and not isinstance(dend,components.Soma)):
-            if hasattr(dend,'update'):
-                if dend.update==True:
-                    symmetric_udpater(error,eta,dend,offmax)
-
-                    # update = np.mean(dend.signal)*error*eta
-                    # update_offset(dend,update,offmax)
-
-                    # update_offset(dend,error,eta,offmax)
-            else:
-                symmetric_udpater(error,eta,dend,offmax)
-
-                # update = np.mean(dend.signal)*error*eta
-                # update_offset(dend,update,offmax)
-
-                # update_offset(dend,error,eta,offmax)
-
-def backpath(node,error,eta,offmax):
-    
-    soma = node.dend_soma
-    if not hasattr(soma,'update_traj'): soma.update_traj = []
-
-    if np.any(np.mean(soma.signal)>0): ds = 1
-    else: ds = 0
-    update = ds*error*eta
-    
-    # update = np.mean(soma.signal)*error*eta
-    # if update < 0: update*=0.8
-        # update = np.random.rand()*.1 #*np.random.choice([-1,1], p=[.5,.5], size=1)[0]
-        # print(soma.name,update)
-    # if node.name == 'node_z':print(node.name, error, np.mean(soma.signal), update)
-    # update_offset(soma,update,offmax)
-    soma.update_traj.append(update)
-    
-    for dend in node.dendrite_list[2:]:
-        if np.any(dend.flux>0.5):  dend.high_roll += 1
-        if np.any(dend.flux<-0.5): dend.low_roll  += 1
-        if not hasattr(dend,'update_traj'): dend.update_traj = []
-        # print(f"{dend.name} -- {dend.outgoing[0][0].name}")
-
-        if np.any(np.mean(dend.signal)>0): ds = 1
-        else: ds = 0
-
-        update = ds*dend.outgoing[0][0].update_traj[-1]#*dend.outgoing[0][1] #*eta
-
-        # update = np.mean(dend.signal)*dend.outgoing[0][0].update_traj[-1]*dend.outgoing[0][1]
-        # if update < 0: update*=0.8
-        # if node.name == 'node_z':
-        #     print(
-        #         f"{dend.name} -- {dend.outgoing[0][0].name} -- {update} -- {dend.outgoing[0][0].update_traj[-1]} -- {dend.outgoing[0][1]}"
-        #         )
-        
-        update_offset(dend,update,offmax)
-
-
-# # ## for arbor
-# # update_type = 'arbor'
-# # eta        = 0.005
-# # fan_fact   = 2
-# # max_offset = .4
-# # target     = 2
-# # weight_type = 'double_dends'
-# # offset_radius = 0.15
-# # mutual_inh = 0 #-0.75
-# # doubled=False
-            
-# patterns          = 10
-
-# runs              = 1000
-# duration          = 250
-# print_mod         = 50
-# plotting          = False
-# realtimeplt       = False
-# printing          = True
-# plot_trajectories = False
-# print_rolls       = False
-
-
-# ## for arbor
-# update_type = 'arbor'
-# eta        = 0.005
-# fan_fact   = 2
-# max_offset = .4
-# target     = 2
-
-
-
-# # ## for backpath
-# # update_type = 'backpath'
-# # eta        = 0.0005
-# # fan_fact   = 2
-# # max_offset = .8
-# # target     = 10
-
-# offset_radius = 0.15
-# mutual_inh = -0.75
-# doubled=False
-
-# # weight_type = 'hybrid'
-# # weight_type = 'random'
-# # weight_type = 'crafted'
-# # weight_type = 'uniform'
-# # weight_type = 'doubled'
-# # weight_type = 'symmetric'
-# # weight_type = 'double_dends'
-# weight_type = 'extended_double_dends'
-# # weight_type = 'hifan'
-
-
-
-# plt.style.use('seaborn-v0_8-muted')
-# colors = plt.rcParams["axes.prop_cycle"].by_key()["color"]
 
 def make_dataset(**config):
     letters_all = make_letters(patterns='all')
@@ -349,7 +92,9 @@ def make_nodes(letters,**config):
                 
         neuron.normalize_fanin_symmetric(fanin_factor=config["fan_fact"])
 
-        if weight_type != 'crafted': neuron.randomize_offsets(config["offset_radius"])
+        if weight_type != 'crafted' and config["offset_radius"] != 0: 
+            print("randomizing flux")
+            neuron.randomize_offsets(config["offset_radius"])
 
         nodes.append(neuron)
 
@@ -379,7 +124,7 @@ def learn(nodes,inputs,**config):
             print(f"Run {run}")
             print(" "*(14+len(str(run))),config["keys"])
 
-
+        # np.random.seed(7)
         shuffled = np.arange(0,config["patterns"],1)
         np.random.shuffle(shuffled)
         success = 0
@@ -413,12 +158,12 @@ def learn(nodes,inputs,**config):
             class_accs[i].append(class_successes[i]/(run+1))
             seen += 1
 
-
+            # if i == 0: plot_by_layer(nodes[0],4)
             for n,node in enumerate(nodes):
                 if config["update_type"] == 'arbor':
-                    make_update(node,errors[n],config["eta"],config["max_offset"])
+                    make_update(node,errors[n],config["eta"],config["max_offset"],config["updater"])
                 elif config["update_type"] == 'backpath':
-                    backpath(node,errors[n],config["eta"],config["max_offset"])
+                    backpath(node,errors[n],config["eta"],config["max_offset"],   config["updater"])
 
             if print_run==True or success==config["patterns"]: 
                 print(f"{run} -- {letter} --> {pred}   {outputs}  --  {errors}")
@@ -431,7 +176,8 @@ def learn(nodes,inputs,**config):
                     plot_nodes(nodes,title=f"Pattern {letter}",dendrites=True)
                     plot_synapse_inversions(nodes)
                     return nodes
-                    
+
+            # plot_synapse_inversions(nodes,title=f"Pattern {letter}",pattern_idx=i)
             clear_net(net)
 
         if success==config["patterns"]:
@@ -452,48 +198,80 @@ def learn(nodes,inputs,**config):
     return nodes
 
 
-config = {
-    "patterns"          : 4,
-    "runs"              : 1000,
-    "duration"          : 250,
-    "print_mod"         : 1,
-    "plotting"          : False,
-    "realtimeplt"       : False,
-    "printing"          : True,
-    "plot_trajectories" : False,
-    "print_rolls"       : False,
+# config = {
+#     "patterns"          : 12,
+#     "runs"              : 1000,
+#     "duration"          : 250,
+#     "print_mod"         : 50,
+#     "plotting"          : False,
+#     "realtimeplt"       : False,
+#     "printing"          : True,
+#     "plot_trajectories" : True,
+#     "print_rolls"       : False,
 
-    ### for arbor
-    "update_type"       : 'arbor',
-    "eta"               : 0.005,
-    "fan_fact"          : 2,
-    "max_offset"        : .4,
-    "target"            : 2,
-
-
-    ### for backpath
-    #"update_type"      : 'backpath',
-    #"eta"              : 0.0005,
-    #"fan_fact"         : 2,
-    #"max_offset"       : .8,
-    #"target"           : 10,
-
-    "offset_radius"     : 0.15,
-    "mutual_inh"        : -0.75,
-    "doubled"           : False,
-
-    # "weight_type"     : 'hybrid',
-    # "weight_type"     : 'random',
-    # "weight_type"     : 'crafted',
-    # "weight_type"     : 'uniform',
-    # "weight_type"     : 'doubled',
-    # "weight_type"     : 'symmetric',
-    "weight_type"     : 'double_dends',
-    # "weight_type"       : 'extended_double_dends',
-    # "weight_type"     : 'hifan',
+#     ### for arbor
+#     "update_type"       : 'arbor',
+#     "eta"               : 0.005,
+#     "fan_fact"          : 2,
+#     "max_offset"        : .4,
+#     "target"            : 2,
 
 
-}
+#     ### for backpath
+#     #"update_type"      : 'backpath',
+#     #"eta"              : 0.0005,
+#     #"fan_fact"         : 2,
+#     #"max_offset"       : .8,
+#     #"target"           : 10,
+
+#     "offset_radius"     : 0, #0.15,
+#     "mutual_inh"        : -0.75,
+#     "doubled"           : False,
+
+#     # "weight_type"     : 'hybrid',
+#     # "weight_type"     : 'random',
+#     # "weight_type"     : 'crafted',
+#     # "weight_type"     : 'uniform',
+#     # "weight_type"     : 'doubled',
+#     # "weight_type"     : 'symmetric',
+#     "weight_type"     :   'double_dends',
+#     # "weight_type"       'extended_double_dends',
+#     # "weight_type"     : 'hifan',
+# }
+
+config = setup_argument_parser().__dict__
+
+# config["patterns"] = 12
+# config["runs"] = 1000
+# config["duration"] = 250
+# config["print_mod"] = 50
+# config["plotting"] = False
+# config["realtimeplt"] = False
+# config["printing"] = True
+# config["plot_trajectories"] = True
+# config["print_rolls"] = False 
+# config["update_type"] = 'arbor'
+# config["eta"] = 0.005
+# config["fan_fact" ] = 2
+# config["max_offset"] = .4
+# config["target"] = 2
+# config["offset_radius"] = 0
+# config["mutual_inh"] = -0.75
+# config["doubled"] = False
+# config["weight_type"] = "double_dends"
+# config["weight_type"] ='hybrid'
+# config["weight_type"] ='random'
+# config["weight_type"] ='crafted'
+# config["weight_type"] ='uniform'
+# config["weight_type"] ='doubled'
+# config["weight_type"] ='symmetric'
+# config["weight_type"] ='double_dends'
+# config["weight_type"] ='extended_double_dends'
+# config["weight_type"] ='hifan'
+# config["updater"] = "symmetric"
+
+
+print_dict(config)
 np.random.seed(10)
 config, letters, inputs = make_dataset(**config)
 nodes, config           = make_nodes(letters,**config)
@@ -503,31 +281,8 @@ nodes                   = learn(nodes,inputs,**config)
 # print_attrs(nodes[0].dendrite_list,['name','update'])
 
 #%%
-node = nodes[7]
-
-
-# for node in nodes:
-#     print(node.name)
-
-
-# plot_synapse_inversions(nodes)
-#%%
-print("\n")
-# print_attrs(nodes[0].dendrite_list,["name","incoming","low_roll"])
-if config["print_rolls"] == True:
-    for node in nodes:
-        print_attrs(node.dendrite_list,["name","high_roll","low_roll"])
-#%%
-# plt.show()
-
-if config["plot_trajectories"] == True:
-    # plt.figure(figsize=(8,4))
-    # for itr,pattern in enumerate(key_list):
-    #     plt.plot(np.arange(0,len(performance_by_tens[itr]),1),
-    #             np.array(performance_by_tens[itr])+.001*itr,
-    #             color=colors[itr%len(colors)],label=pattern)
-    # plt.legend()
-    # plt.show()
+def plot_trajectories(nodes,double_dends=False):
+    colors = plt.rcParams["axes.prop_cycle"].by_key()["color"]
 
     fig,ax = plt.subplots(len(nodes),1,figsize=(8,2.25*len(nodes)), sharex=True)
     for n,node in enumerate(nodes):
@@ -537,17 +292,27 @@ if config["plot_trajectories"] == True:
             if hasattr(dend,'update_traj') and 'ref' not in dend.name:
                 if isinstance(dend,components.Soma): 
                     lw = 4
-                    c = colors[0]
+                    c = colors[2]
                     line='solid'
-                elif int(dend.name[dend.name.find("d_")+2])==1:
+
+                elif dend.loc[0]==1:
                     c = colors[3] 
                     lw = 2 
                     line = 'dashed'
-                else:
-                    c = colors[1] 
-                    lw = 1   
+                elif dend.loc[0]==3:
+                    # print(dend.name, dend.outgoing[0][1])
+                    if dend.outgoing[0][1] < 0:
+                        c = 'r' 
+                    else:
+                        c = 'g'
+                    lw = 2   
                     line = 'dotted'
-                ax[n].plot(np.array(dend.update_traj),linewidth=lw,linestyle=line,label=dend.name)
+                else:
+                    c = colors[4]
+                    lw = 1
+                    line = 'dotted'
+
+                ax[n].plot(np.array(dend.update_traj),linewidth=lw,linestyle=line,color=c,label=dend.name)
 
         # plt.legend(bbox_to_anchor=(1.01,1))
         # ax[n].set_x_label("Updates",fontsize=14)
@@ -555,9 +320,13 @@ if config["plot_trajectories"] == True:
     fig.tight_layout()
     plt.show()
 
+# plot_synapse_inversions(nodes)
 
-    # loc = "results/games/"
-    # picklit(accs,loc,f"accs_{fan}_{offmax}")
-    # picklit(class_accs,loc,f"classes_{fan}_{offmax}")
-    # picklit(nodes,loc,f"nodes_{fan}_{offmax}")
-    # del(nodes)
+if config["print_rolls"] == True:
+    for node in nodes:
+        print_attrs(node.dendrite_list,["name","high_roll","low_roll"])
+
+if config["plot_trajectories"] == True:
+    plot_trajectories(nodes,config["doubled"])
+
+

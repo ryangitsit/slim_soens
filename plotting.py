@@ -1,5 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
+import components
+
 def heatmap_adjacency(adjacency_matrix):
     for (j,i),label in np.ndenumerate(adjacency_matrix):
         if label!=0.0:plt.text(i,j,label,ha='center',va='center',fontsize=8)
@@ -135,8 +137,8 @@ def plot_letters(letters,letter=None):
                 )
     plt.show()
 
-def plot_synapse_inversions(nodes):
-    fig,ax = plt.subplots(len(nodes),1,figsize=(6,2.25*len(nodes))) #,sharex=True)
+def plot_synapse_inversions(nodes,title="Double-Synapse Flux Offsets",pattern_idx=None):
+    fig,ax = plt.subplots(len(nodes),1,figsize=(6,2.25*len(nodes)),sharex=True)
     for n,node in enumerate(nodes):
         neg_syns = []
         pos_syns = []
@@ -154,27 +156,22 @@ def plot_synapse_inversions(nodes):
                 if np.mean(dend.signal) > 0: 
                     active_syns +=1
                     if dend.outgoing[0][1] < 0:
-                        neg_syns.append(np.min(dend.flux))
+                        neg_syns.append(dend.flux_offset)
                         # plt.plot(dend.signal,'--')
-                        active_neg.append(np.min(dend.flux))
+                        active_neg.append(dend.flux_offset)
 
                     else:
-                        active_pos.append(np.min(dend.flux))
-                        pos_syns.append(np.min(dend.flux))
+                        active_pos.append(dend.flux_offset)
+                        pos_syns.append(dend.flux_offset)
                         # plt.plot(dend.signal)
                 else:
                     if dend.outgoing[0][1] < 0:
-                        neg_syns.append(np.min(dend.flux))
-                        inactive_neg.append(np.min(dend.flux))
+                        neg_syns.append(dend.flux_offset)
+                        inactive_neg.append(dend.flux_offset)
 
                     else:
-                        pos_syns.append(np.min(dend.flux))
-                        inactive_pos.append(np.min(dend.flux))
-
-                    
-        # print(active_syns)
-        # plt.plot(node.dend_soma.signal,linewidth=4)
-        # plt.show()
+                        pos_syns.append(dend.flux_offset)
+                        inactive_pos.append(dend.flux_offset)
 
 
         ax[n].hist(active_neg,color='r'  ,bins=30)
@@ -183,7 +180,67 @@ def plot_synapse_inversions(nodes):
         ax[n].hist(inactive_neg,color='r',bins=30,alpha=0.3)
         ax[n].hist(inactive_pos,color='g',bins=30,alpha=0.3)
         ax[n].set_title(node.name,y=.75,x=.3)
-        if n==7: ax[n].set_facecolor('lightgrey')
+        
         # plt.hist(neg_syns,color='r',bins=50,alpha=0.3)
         # plt.hist(pos_syns,color='g',bins=50,alpha=0.3)
+    if pattern_idx is not None: ax[pattern_idx].set_facecolor('lightgrey')
+    plt.suptitle(title)
+    plt.show()
+
+def plot_trajectories(nodes,double_dends=False):
+    colors = plt.rcParams["axes.prop_cycle"].by_key()["color"]
+
+    fig,ax = plt.subplots(len(nodes),1,figsize=(8,2.25*len(nodes)), sharex=True)
+    for n,node in enumerate(nodes):
+
+        ax[n].set_title(f"Update Trajectory of {node.name} Arbor",fontsize=12)
+        for dend in node.dendrite_list:
+            if hasattr(dend,'update_traj') and 'ref' not in dend.name:
+                if isinstance(dend,components.Soma): 
+                    lw = 4
+                    c = colors[0]
+                    line='solid'
+                elif dend.loc[0]==1:
+                    c = colors[3] 
+                    lw = 2 
+                    line = 'dashed'
+                elif dend.loc[0]==4:
+                    if dend.outgoing[0][1] < 0:
+                        c = colors[1] 
+                    else:
+                        c = colors[5]
+                    lw = 2   
+                    line = 'dotted'
+                else:
+                    c = colors[2]
+                    lw =0.5
+                    line = 'dotted'
+
+                ax[n].plot(np.array(dend.update_traj),linewidth=lw,linestyle=line,label=dend.name)
+
+        # plt.legend(bbox_to_anchor=(1.01,1))
+        # ax[n].set_x_label("Updates",fontsize=14)
+        # ax[n].set_y_label("Flux Offset",fontsize=14)
+    fig.tight_layout()
+    plt.show()
+
+def plot_by_layer(node,layers):
+    colors = plt.rcParams["axes.prop_cycle"].by_key()["color"]
+    plt.figure(figsize=(8,4))
+    layers_encountered = []
+    for dend in node.dendrite_list[:1] + node.dendrite_list[2:]:
+        layer = dend.loc[0]
+        
+        lw = layers - layer
+        c=colors[layer%len(colors)]
+        line = "solid"
+        if dend.loc[0] != 0 and dend.outgoing[0][1]<0: line = "dashed"
+
+        if layer not in set(layers_encountered):
+            plt.plot(dend.signal,linewidth=lw,linestyle=line,label=f"Layer {layer}", color=c)
+        else:
+            plt.plot(dend.signal,linewidth=lw,linestyle=line,color=c)
+        layers_encountered.append(layer)
+    plt.legend()
+    plt.title(node.name)
     plt.show()

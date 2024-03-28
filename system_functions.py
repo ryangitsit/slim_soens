@@ -340,3 +340,8 @@ def mutual_inhibition(nodes,inhibition_strengh):
                 node_send.dend_soma.outgoing.append(node_receive.synapse_list[-1])
                 node_receive.synapse_list[-1].incoming.append((node_send.dend_soma,1))
     
+def print_dict(dct):
+    print("\n")
+    for i,(k,v) in enumerate(dct.items()):
+        print(f" {i}   {k}  {v}")
+    print("\n")

@@ -220,7 +220,7 @@ class Neuron():
                     ]
 
     def randomize_offsets(self,radius):
-        for dend in self.dendrite_list[:2]:
+        for dend in self.dendrite_list[2:]:
             dend.flux_offset = np.random.rand()*radius*np.random.choice([-1,1], p=[.5,.5], size=1)[0]
 
 
