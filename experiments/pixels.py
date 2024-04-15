@@ -84,11 +84,11 @@ def make_nodes(letters,**config):
             )
 
         # if i >= 0: 
-        #     dims = [2]
-        #     for w  in weights:
-        #         dims.append(count_total_elements(w))
-        #     print(dims)
-        #     graph_adjacency(neuron.adjacency,dims)
+            # dims = [2]
+            # for w  in weights:
+            #     dims.append(count_total_elements(w))
+            # print(dims)
+            # graph_adjacency(neuron.adjacency,dims)
                 
         neuron.normalize_fanin_symmetric(fanin_factor=config["fan_fact"])
 
@@ -191,6 +191,7 @@ def learn(nodes,inputs,**config):
         if config["printing"]==True:
             if print_run==True: 
                 print(f"Run performance:  {np.round(acc,2)}   Run time = {np.round(s2-s1,2)}")
+                # print_attrs(nodes[0].dendrite_list,['name','outgoing'])
                 print("\n=============")
         else:
             print(f"Run {run} performance:  {np.round(acc,2)}   Run time = {np.round(s2-s1,2)}",end="\r")
@@ -210,11 +211,11 @@ def learn(nodes,inputs,**config):
 #     "print_rolls"       : False,
 
 #     ### for arbor
-#     "update_type"       : 'arbor',
-#     "eta"               : 0.005,
-#     "fan_fact"          : 2,
-#     "max_offset"        : .4,
-#     "target"            : 2,
+    # "update_type"       : 'arbor',
+    # "eta"               : 0.005,
+    # "fan_fact"          : 2,
+    # "max_offset"        : .4,
+    # "target"            : 2,
 
 
 #     ### for backpath
@@ -240,8 +241,9 @@ def learn(nodes,inputs,**config):
 # }
 
 config = setup_argument_parser().__dict__
+# config = {}
 
-# config["patterns"] = 12
+# config["patterns"] = 3
 # config["runs"] = 1000
 # config["duration"] = 250
 # config["print_mod"] = 50
@@ -250,25 +252,46 @@ config = setup_argument_parser().__dict__
 # config["printing"] = True
 # config["plot_trajectories"] = True
 # config["print_rolls"] = False 
+
+# # # config["update_type"] = 'arbor'
+# # # config["eta"] = 0.005
+# # # config["fan_fact" ] = 2
+# # # config["max_offset"] = .4
+# # # config["target"] = 2
+# # # config["offset_radius"] = 0
+# # # config["mutual_inh"] = -0.75
+# # # config["doubled"] = False
+# # # config["weight_type"] = "double_dends"
+# # # config["weight_type"] ='hybrid'
+# # # config["weight_type"] ='random'
+# # # config["weight_type"] ='crafted'
+# # # config["weight_type"] ='uniform'
+# # # config["weight_type"] ='doubled'
+# # # config["weight_type"] ='symmetric'
+# # # config["weight_type"] ='double_dends'
+# # # config["weight_type"] ='extended_double_dends'
+# # # config["weight_type"] ='hifan'
+# # # config["updater"] = "symmetric"
+
+# # # config["update_type" ] =  'backpath'
+# # # config["eta"         ] =  0.0005
+# # # config["fan_fact"    ] =  2
+# # # config["max_offset"  ] =  .8
+# # # config["target"      ] =  10
+# # # config["offset_radius"] = 0.15
+# # # config["weight_type"]  ='uniform'
+# # # config["mutual_inh"] = 0
+
 # config["update_type"] = 'arbor'
-# config["eta"] = 0.005
-# config["fan_fact" ] = 2
-# config["max_offset"] = .4
-# config["target"] = 2
+# config["eta"        ] = 0.005
+# config["fan_fact"   ] = 2
+# config["max_offset" ] = .4
+# config["target"     ] = 2
+# config["weight_type"] ='extended_double_dends'
 # config["offset_radius"] = 0
 # config["mutual_inh"] = -0.75
-# config["doubled"] = False
-# config["weight_type"] = "double_dends"
-# config["weight_type"] ='hybrid'
-# config["weight_type"] ='random'
-# config["weight_type"] ='crafted'
-# config["weight_type"] ='uniform'
-# config["weight_type"] ='doubled'
-# config["weight_type"] ='symmetric'
-# config["weight_type"] ='double_dends'
-# config["weight_type"] ='extended_double_dends'
-# config["weight_type"] ='hifan'
-# config["updater"] = "symmetric"
+# config["updater"] = "symmetric" #"chooser" #
+
 
 
 print_dict(config)
@@ -280,10 +303,65 @@ nodes                   = learn(nodes,inputs,**config)
 # print_attrs(nodes[0].dendrite_list,['name','incoming'])
 # print_attrs(nodes[0].dendrite_list,['name','update'])
 
+
+#%%
+
+
+def plot_disynaptic_representations(nodes,shape,extended=False):
+    colors = plt.rcParams["axes.prop_cycle"].by_key()["color"]
+
+
+    if extended==False:
+        fig,ax = plt.subplots(len(nodes),2,figsize=(4,2*len(nodes)), sharex=True, sharey=True)
+        for n,node in enumerate(nodes):
+            inh_offsets = []
+            ext_offsets = []
+            for dend in node.dendrite_list:
+                if dend.loc[0]==3 and dend.outgoing[0][1] < 0:
+                    inh_offsets.append(dend.flux_offset)
+                elif dend.loc[0]==3 and dend.outgoing[0][1] > 0:
+                    ext_offsets.append(dend.flux_offset)
+            ax[n][0].set_xticks([])
+            ax[n][1].set_xticks([])
+
+            ax[n][0].set_yticks([])
+            ax[n][1].set_yticks([])
+
+            ax[n][0].imshow(np.array(ext_offsets).reshape(shape),cmap='Greens')
+            ax[n][1].imshow(np.array(inh_offsets).reshape(shape),cmap='Reds')
+        plt.tight_layout()
+        plt.show()
+
+    if extended==True:
+
+        fig,ax = plt.subplots(len(nodes),4,figsize=(4,1*len(nodes)), sharex=True, sharey=True)
+
+        for n,node in enumerate(nodes):
+            inh_offsets = []
+            ext_offsets = []
+            for dend in node.dendrite_list:
+                if dend.loc[0]==3 and dend.outgoing[0][1] < 0:
+                    inh_offsets.append(dend.flux_offset)
+                elif dend.loc[0]==3 and dend.outgoing[0][1] > 0:
+                    ext_offsets.append(dend.flux_offset)
+            ax[n][0].set_xticks([])
+            ax[n][1].set_xticks([])
+
+            ax[n][0].set_yticks([])
+            ax[n][1].set_yticks([])
+
+            ax[n][0].imshow(np.array(ext_offsets[:9]).reshape(shape),cmap='Greens')
+            ax[n][2].imshow(np.array(ext_offsets[9:]).reshape(shape),cmap='Greens')
+            ax[n][1].imshow(np.array(inh_offsets[:9]).reshape(shape),cmap='Reds')
+            ax[n][3].imshow(np.array(inh_offsets[9:]).reshape(shape),cmap='Reds')
+
+        plt.tight_layout()
+        plt.show()
+
+plot_disynaptic_representations(nodes,(3,3),extended=True)
 #%%
 def plot_trajectories(nodes,double_dends=False):
     colors = plt.rcParams["axes.prop_cycle"].by_key()["color"]
-
     fig,ax = plt.subplots(len(nodes),1,figsize=(8,2.25*len(nodes)), sharex=True)
     for n,node in enumerate(nodes):
 

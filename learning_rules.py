@@ -56,6 +56,24 @@ def choosing_udpater(error,eta,dend,offmax):
 
     update_offset(dend,update,offmax)
 
+def splitting_udpater(error,eta,dend,offmax):
+    """
+    """
+    # # print("splitting update")
+    # if dend.outgoing[0][1] < 0: 
+    #     update = np.mean(dend.signal)*error*eta*-1
+    # elif dend.outgoing[0][1] > 0: 
+    #     update = np.mean(dend.signal)*error*eta
+
+    update = np.mean(dend.signal)*error*eta
+    dend.flux_offset += update
+
+    if np.sign(dend.flux_offset) != np.sign(dend.outgoing[0][1]):
+        # print("Flip",dend.flux_offset,dend.outgoing[0][1])
+        dend.outgoing[0][1] = dend.outgoing[0][1]*-1
+    dend.update_traj.append(dend.flux_offset)
+    # update_offset(dend,update,offmax)
+
 
 def make_update(node,error,eta,offmax,updater):
     for i,dend in enumerate(node.dendrite_list):
@@ -75,6 +93,8 @@ def make_update(node,error,eta,offmax,updater):
                         update_offset(dend,update,offmax)
                     elif updater == 'chooser':
                         choosing_udpater(error,eta,dend,offmax)
+                    elif updater == 'splitter':
+                        splitting_udpater(error,eta,dend,offmax)
 
             else:
                 if updater == 'symmetric':
@@ -84,6 +104,8 @@ def make_update(node,error,eta,offmax,updater):
                     update_offset(dend,update,offmax)
                 elif updater == 'chooser':
                     choosing_udpater(error,eta,dend,offmax)
+                elif updater == 'splitter':
+                    splitting_udpater(error,eta,dend,offmax)
 
                 # update_offset(dend,error,eta,offmax)
 

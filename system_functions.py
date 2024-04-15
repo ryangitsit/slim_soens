@@ -111,7 +111,7 @@ def print_attrs(obj_list,attrs):
     print("\n")
     results = []
     for attr in attrs:
-        print(attr)
+        # print(attr)
         results.append(attr_map(obj_list,attr))
 
     for i,item in enumerate(results[0]):

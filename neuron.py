@@ -223,6 +223,12 @@ class Neuron():
         for dend in self.dendrite_list[2:]:
             dend.flux_offset = np.random.rand()*radius*np.random.choice([-1,1], p=[.5,.5], size=1)[0]
 
+    def get_dimensions(self):
+        dims = [2]
+        for w  in self.weights:
+            dims.append(count_total_elements(w))
+        print(dims)
+
 
     def __del__(self):
         """
