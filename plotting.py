@@ -224,7 +224,7 @@ def plot_trajectories(nodes,double_dends=False):
     fig.tight_layout()
     plt.show()
 
-def plot_by_layer(node,layers):
+def plot_by_layer(node,layers,flux=False):
     colors = plt.rcParams["axes.prop_cycle"].by_key()["color"]
     plt.figure(figsize=(8,4))
     layers_encountered = []
@@ -240,6 +240,9 @@ def plot_by_layer(node,layers):
             plt.plot(dend.signal,linewidth=lw,linestyle=line,label=f"Layer {layer}", color=c)
         else:
             plt.plot(dend.signal,linewidth=lw,linestyle=line,color=c)
+            if flux == True:
+                plt.plot(dend.flux,'--',linewidth=lw,color=c)
+
         layers_encountered.append(layer)
     plt.legend()
     plt.title(node.name)

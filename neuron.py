@@ -228,6 +228,7 @@ class Neuron():
         for w  in self.weights:
             dims.append(count_total_elements(w))
         print(dims)
+        return dims
 
 
     def __del__(self):
