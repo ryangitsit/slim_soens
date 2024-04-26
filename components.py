@@ -77,6 +77,12 @@ class Dendrite():
 
         self.__dict__.update(params)
 
+        tau_di = self.tau * 1e-9  
+        Ic = 100 * 1e-6
+        Ldi = 6.62606957e-34/(2*1.60217657e-19)*self.beta/(2*np.pi*Ic)
+        rdi = Ldi/tau_di
+        self.alpha = rdi/2.565564120477849
+
     def add_input(self, input_object):
         """
         Docstring
