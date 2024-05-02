@@ -53,6 +53,7 @@ def plot_nodes(
         ref       = True,
         flux      = True,
         dendrites = False,
+        weighting = False,
         ):
 
     plt.style.use('seaborn-v0_8-muted')
@@ -96,8 +97,10 @@ def plot_nodes(
         if ref==True:  
             plt.plot(node.dend_ref.signal,':',linewidth=1,color=colors[2],label="refractory signal")
         if dendrites==True:
+            w = 1
             for d,dend in enumerate(node.dendrite_list[2:]):
-                plt.plot(dend.flux,'--',linewidth=1)
+                if weighting==True: w = dend.outgoing[0][1]
+                plt.plot(dend.signal*w,'--',linewidth=1)
         plt.title(node.name, fontsize=16)
         plt.subplots_adjust(bottom=.125)
         

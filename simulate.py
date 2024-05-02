@@ -73,7 +73,7 @@ def s_of_phi(phi,s,A=1,B=.466,ib=1.8):
     """
     Docstring
     """
-    phi_th = 0.1675
+    phi_th = 0.1675 #ind_phi_th(s,A,B) #0.1675
     r_fq = A*(phi-phi_th)*(B*ib-s)
     if phi<phi_th: r_fq = 0
     return r_fq
@@ -98,6 +98,7 @@ def update_signal(dend,t,dt,d_tau):
     dend.signal[t+1] = dend.signal[t] * ( 
             1 - d_tau*dend.alpha/dend.beta
             ) + (d_tau/dend.beta) * r_fq
+
 
 
 def update_dendrite(dend,t,dt,d_tau):
