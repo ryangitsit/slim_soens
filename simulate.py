@@ -120,8 +120,10 @@ def update_soma(soma,ref,t,dt,d_tau,tf):
             spk_t = t+soma.abs_ref/dt
             if spk_t < tf:
                 soma.spikes.append(spk_t)
+                # soma.spikes.append(t)
                 for syn in soma.outgoing:
                     add_spike(syn,spk_t,dt,len(soma.signal))
+                    # add_spike(syn,t,dt,len(soma.signal))
                 add_spike(ref,t+1,dt,len(soma.signal))
             soma.quiescence = spk_t
         else:

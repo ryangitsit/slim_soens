@@ -72,9 +72,15 @@ def plot_nodes(
                 if flux==True: ax[i].plot(node.dend_soma.flux,'--',linewidth=2,color=colors[1])
                 if ref==True:  ax[i].plot(node.dend_ref.signal,':',linewidth=1,color=colors[2])
 
+            # if dendrites==True:
+            #     for d,dend in enumerate(node.dendrite_list[2:]):
+            #         ax[i].plot(dend.flux,'--',linewidth=1)
+
             if dendrites==True:
+                w = 1
                 for d,dend in enumerate(node.dendrite_list[2:]):
-                    ax[i].plot(dend.flux,'--',linewidth=1)
+                    if weighting==True: w = dend.outgoing[0][1]
+                    ax[i].plot(dend.signal*w,'--',linewidth=1)
 
             ax[i].set_title(node.name)
 

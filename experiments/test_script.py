@@ -48,11 +48,18 @@ arbor_params = [
 
 timing_neuron = Neuron(
     name=f'timing_node',
-    threshold = 1.25,
+    threshold = .25,
     weights=W_timing,
     arbor_params=arbor_params
     )
 timing_neuron.normalize_fanin_symmetric(fanin_factor=2)
+
+downstream_neuron = Neuron(
+    name=f'timing_node',
+    threshold = .25,
+    # weights=W_timing,
+    # arbor_params=arbor_params
+    )
 
 print_attrs(timing_neuron.dendrite_list,['name','tau','alpha'])
 
@@ -69,10 +76,13 @@ inpt = [
 #     [130]
 # ]
 
+nodes = [timing_neuron,downstream_neuron]
+mutual_inhibition(nodes,-1)
+
 timing_neuron.add_spike_rows(inpt)
 net = Network(
     run_simulation = True,
-    nodes          = [timing_neuron],
+    nodes          = nodes,
     duration       = 160,
 )
-plot_nodes([timing_neuron],dendrites=True,weighting=True)
+plot_nodes(nodes,dendrites=True,weighting=True)
