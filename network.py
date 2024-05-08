@@ -19,10 +19,21 @@ class Network():
                 print("Multithreading")
                 self.run_network_simulation_multithread()
             else:
-                self.run_network_simulation()  
+                self.run_network_simulation()
 
     def run_network_simulation(self):
         run_slim_soens(self)
+        
+    def get_output_spikes(self):
+        spike_times   = []
+        spike_indices = []
+        for i,node in enumerate(self.nodes):
+            for spk in node.dend_soma.spikes:
+                spike_times.append(spk)
+                spike_indices.append(i)
+
+        self.output_spikes = [spike_indices,spike_times]
+        return self.output_spikes
 
     def run_network_simulation_multithread(self):
         run_slim_soens_multi(self)

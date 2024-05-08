@@ -17,12 +17,13 @@ def update_offset(dend,update,offmax):
         dend.flux_offset = np.max([dend.flux_offset, -1*offmax])
     dend.update_traj.append(dend.flux_offset)
 
-def symmetric_udpater(error,eta,dend,offmax):
+def symmetric_udpater(error,eta,dend,offmax,layers):
     """
     Try this for synaptic layer only
     Play with zero-signal update coefficient
     """
-    if dend.loc[0]==3:
+    
+    if dend.loc[0]==layers-1:
         if dend.outgoing[0][1] < 0: 
             update_sign = -1
         else:
@@ -39,12 +40,12 @@ def symmetric_udpater(error,eta,dend,offmax):
 
     update_offset(dend,update,offmax)
 
-def choosing_udpater(error,eta,dend,offmax):
+def choosing_udpater(error,eta,dend,offmax,layers):
     """
 
     """
     # print("chooser")
-    if dend.loc[0]==3:
+    if dend.loc[0]==layers-1:
         if dend.outgoing[0][1] < 0 and error<0: 
             update = np.mean(dend.signal)*error*eta*-1
         elif dend.outgoing[0][1] > 0 and error>0: 
@@ -87,23 +88,23 @@ def make_update(node,error,eta,offmax,updater):
             if hasattr(dend,'update'):
                 if dend.update==True:
                     if updater == 'symmetric':
-                        symmetric_udpater(error,eta,dend,offmax)
+                        symmetric_udpater(error,eta,dend,offmax,node.layers)
                     elif updater == 'classic':
                         update = np.mean(dend.signal)*error*eta
                         update_offset(dend,update,offmax)
                     elif updater == 'chooser':
-                        choosing_udpater(error,eta,dend,offmax)
+                        choosing_udpater(error,eta,dend,offmax,node.layers)
                     elif updater == 'splitter':
                         splitting_udpater(error,eta,dend,offmax)
 
             else:
                 if updater == 'symmetric':
-                    symmetric_udpater(error,eta,dend,offmax)
+                    symmetric_udpater(error,eta,dend,offmax,node.layers)
                 elif updater == 'classic':
                     update = np.mean(dend.signal)*error*eta
                     update_offset(dend,update,offmax)
                 elif updater == 'chooser':
-                    choosing_udpater(error,eta,dend,offmax)
+                    choosing_udpater(error,eta,dend,offmax,node.layers)
                 elif updater == 'splitter':
                     splitting_udpater(error,eta,dend,offmax)
 

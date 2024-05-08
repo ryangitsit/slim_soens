@@ -46,6 +46,8 @@ class Neuron():
 
         self.add_synaptic_layer()
 
+        self.get_dimensions()
+
         
 
     def make_dend(self,l,g,d,dend_params):
@@ -227,7 +229,8 @@ class Neuron():
         dims = [2]
         for w  in self.weights:
             dims.append(count_total_elements(w))
-        print(dims)
+        self.dims = dims
+        self.layers = len(dims)
         return dims
 
 
