@@ -3,6 +3,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import time
 import sys
+from keras.datasets import mnist
+
 sys.path.append('../')
 
 from neuron import Neuron
@@ -15,7 +17,7 @@ from plotting import *
 from system_functions import *
 from argparser import setup_argument_parser
 
-np.random.seed(10)
+
 
 def make_rnn(N,p_connect):
     weights = [
@@ -31,17 +33,15 @@ def make_rnn(N,p_connect):
         neuron.normalize_fanin(fanin_factor=2)
         nodes.append(neuron)
     
-    for i,n1 in enumerate(nodes):
-        for j,n2 in enumerate(nodes):
-            if np.random.rand() < p_connect:
-                for s,syn in enumerate(n2.synapse_list):
-                    if len(syn.incoming) == 0:
-                        n1.dend_soma.outgoing.append(syn)
-                        syn.incoming.append((n1.dend_soma,1))
-                        break
+    # for i,n1 in enumerate(nodes):
+    #     for j,n2 in enumerate(nodes):
+    #         if np.random.rand() < p_connect:
+    #             for s,syn in enumerate(n2.synapse_list):
+    #                 if len(syn.incoming) == 0:
+    #                     n1.dend_soma.outgoing.append(syn)
+    #                     syn.incoming.append((n1.dend_soma,1))
+    #                     break
     return nodes
-
-
 
 def add_clamped_input(nodes,inpt):
     for i,val in enumerate(inpt):
@@ -59,35 +59,10 @@ def run_net(nodes,duration=500):
     # plot_nodes(nodes)
 
 
+def make_dataset(digits,samples,start=0):
     
-# N = 784
-# p = .2
-# nodes = make_rnn(N,p)
-
-# # inpt = np.random.rand(10,)
-# # inpt = np.zeros((10,))
-# # inpt[np.random.randint(())] = 1
-# inpt = np.random.randint(2, size=N)
-
-# add_clamped_input(nodes,inpt)
-
-# spikes = run_net(nodes,duration=100)
-
-# # %%
-# plt.figure(figsize=(10,4))
-# plt.plot(spikes[1],spikes[0],'.k',ms=.75)
-# plt.show()
-
-#%%
-
-def make_dataset(digits,samples):
-    from keras.datasets import mnist
     (X_train, y_train), (X_test, y_test) = mnist.load_data()
-    # X_train = X_train[(y_train == 0) | (y_train == 1) | (y_train == 2)]
-    # y = y_train[(y_train == 0) | (y_train == 1) | (y_train == 2)]
-    # print(len(X_train))
-
-    data = [X_train[(y_train == i)][:samples] for i in range(digits)]
+    data = [X_train[(y_train == i)][start:start+samples] for i in range(digits)]
 
     dataset = [[] for i in range(digits)]
 
@@ -97,37 +72,30 @@ def make_dataset(digits,samples):
 
     return dataset
 
-digits = 10
-samples = 50
-# dataset = make_dataset(digits,samples) 
-# picklit(dataset,".","mnist_spikes")
-dataset = picklin(".","mnist_spikes")
 
-#%%
-
-N = 784
-p = 1
-
-def gen_rnn_spikes(N,p,digits,samples,dataset):
+def gen_rnn_spikes(N,p,digits,samples,dataset,start,save,exp_name,rnn_nodes=None):
     res_spikes = [[] for _ in range(digits)]
 
-    nodes = make_rnn(N,p)
+    if rnn_nodes is None:
+        nodes = make_rnn(N,p)
+        if save==True: 
+            picklit(nodes,f"../results/mnist_study/{exp_name}/",f"res_nodes_{N}_{p}_{digits}_{samples}_{start}") 
+    else:
+        print("Reuse rnn")
+        nodes = rnn_nodes
+    
     for i in range(digits):
         for j in range(samples):
-            print(i,j)
+            print(f"Making dataset: Digit {i} Sample {j}" ,end="\r")
             inpt = dataset[i][j]*10 #> 0
 
             add_clamped_input(nodes,inpt)
             spikes = run_net(nodes,duration=100)
             res_spikes[i].append(spikes)
-            # plt.figure(figsize=(10,4))
-            # plt.plot(spikes[1],spikes[0],'.k',ms=.75)
-            # plt.show()
-    picklit(res_spikes,".","rnn_spikes")
-    return res_spikes
 
-res_spikes = gen_rnn_spikes(N,p,digits,samples,dataset)
-#%%
+    if save==True: picklit(res_spikes,f"../results/mnist_study/{exp_name}/",f"rnn_spikes_{digits}_{samples}_{start}")
+    return res_spikes, nodes
+
 
 def make_readout_nodes(classes):
     weights = [
@@ -162,97 +130,143 @@ def make_disynaptic_readout_nodes(classes):
     return readout_nodes
 
 
-# readout_nodes=make_readout_nodes(digits)
-# doubled=False
-# updater = 'classic'
+def learn_readout_mapping(
+        digits,
+        samples,
+        readout_nodes,
+        res_spikes,
+        runs=1,
+        eta=0.0005,
+        max_offset=0.4,
+        exp_name='test',
+        learn=True
+        ):
+    epoch_accs = []
+    for run in range(runs):
+        success = 0
+        seen = 0
+        for i in range(digits):
+            for j in range(samples):
+                seen+=1
+                for node in readout_nodes:
 
-readout_nodes=make_disynaptic_readout_nodes(digits)
-doubled=True
-# updater = 'symmetric'
-updater = 'chooser'
+                    node.add_indexed_spikes(res_spikes[i][j],doubled=True)
 
-learn = True
+
+                readout_net = Network(
+                    run_simulation = True,
+                    nodes          = readout_nodes,
+                    duration       = 100,
+                )
+                # spikes = readout_net.get_output_spikes()
+                # plot_nodes(readout_nodes)
+
+                targets = np.zeros(digits,)
+                targets[i] = 1
+                outputs = []
+                for n,neuron in enumerate(readout_nodes):
+                    output = len(readout_nodes[n].dend_soma.spikes)
+                    outputs.append(output)
+                    if learn==True:
+                        error = targets[n] - outputs[n]
+                        make_update(neuron,error,eta,max_offset,updater)
+                hit = 0
+                if no_ties(i,outputs) == True: 
+                    hit = 1
+                success+=hit
+                running_acc=np.round(success/seen,2)
+                print(outputs,targets,hit,running_acc)
+                clear_net(readout_net)
+        epoch_accs.append(running_acc)
+        print(f"Epoch {run} accuracy = {running_acc}\n")
+        if learn==True:
+            if run%10==0: picklit(
+                readout_nodes,
+                f"../results/mnist_study/{exp_name}/",f"readouts_{updater}_{digits}_{samples}_{start}_at_{run}"
+                )
+            if running_acc == 1:
+                print("Converged!")
+                picklit(
+                    readout_nodes,
+                    f"../results/mnist_study/{exp_name}/",f"readouts_converged_{updater}_{digits}_{samples}_{start}_at_{run}"
+                    )
+                return readout_nodes, epoch_accs
+    return readout_nodes, epoch_accs
+
+
+def get_reservoir_spikes(digits,samples,start,N,p,exp_name,make=False,save=False):
+
+    ### Either Make or Load MNIST Data And Subsequent Reservoir###
+    if make == True:
+        dataset = make_dataset(digits,samples,start) 
+        res_spikes,rnn_nodes = gen_rnn_spikes(N,p,digits,samples,dataset,start,save,exp_name)
+
+        if save==True:
+            picklit(dataset,f"../results/mnist_study/{exp_name}/",f"mnist_data_{digits}_{samples}_start_{start}")
+
+    else:
+        dataset = picklin(f"../results/mnist_study/{exp_name}/",f"mnist_spikes_{digits}_{samples}_start_{start}")
+    return dataset, res_spikes, rnn_nodes
+    
+    
+def train(digits,samples,res_spikes,updater,eta,max_offset,runs,exp_name):
+    readout_nodes = make_disynaptic_readout_nodes(digits)
+    readout_nodes, learning_accs = learn_readout_mapping(
+        digits,
+        samples,
+        readout_nodes,
+        res_spikes,
+        runs=runs,
+        eta=eta,
+        max_offset=max_offset,
+        exp_name=exp_name,
+        learn=True
+        )
+    picklit(learning_accs,f"../results/mnist_study/{exp_name}/",f"learning_accs")
+    return readout_nodes
+
+def test(digits,samples,start,readout_nodes,rnn_nodes=None):
+    test_start = start+digits*samples
+    test_samples = int(samples*.2)
+    dataset = make_dataset(digits,test_samples,test_start)
+    save = True
+
+    test_res_spikes,rnn_nodes = gen_rnn_spikes(
+        N,p,digits,test_samples,dataset,test_start,save,exp_name,rnn_nodes=rnn_nodes
+        )
+    
+    readout_nodes, test_accs = learn_readout_mapping(
+        digits,
+        test_samples,
+        readout_nodes,
+        test_res_spikes,
+        exp_name=exp_name,
+        learn=False
+        )
+    print(f"Testing Accuracy of {test_accs[-1]*100} on {test_samples} new samples of {digits} classes.")
+    picklit(test_accs,f"../results/mnist_study/{exp_name}/",f"test_accs")
+
+
+#%%
+    
+np.random.seed(10)
+
+digits = 10
+samples = 50
+start=0
+runs = 3
+
+
+N = 784
+p = 1
+updater = 'symmetric'
 eta = 0.0005
 max_offset = 0.4 #0.1675
-runs=2500
 
-for run in range(runs):
-    success = 0
-    seen = 0
-    for i in range(digits):
-        for j in range(samples):
-            seen+=1
-            for node in readout_nodes:
-                # print(res_spikes[i][j])
+exp_name = "test_run"
 
-                node.add_indexed_spikes(res_spikes[i][j],doubled=doubled)
+dataset, res_spikes, rnn_nodes = get_reservoir_spikes(digits,samples,start,N,p,exp_name,make=True,save=True)
+readout_nodes = train(digits,samples,res_spikes,updater,eta,max_offset,runs,exp_name)
+test(digits,samples,start,readout_nodes,rnn_nodes=rnn_nodes)
 
 
-            readout_net = Network(
-                run_simulation = True,
-                nodes          = readout_nodes,
-                duration       = 100,
-            )
-            # spikes = readout_net.get_output_spikes()
-            # plot_nodes(readout_nodes)
-
-            targets = np.zeros(digits,)
-            targets[i] = 1
-            outputs = []
-            for n,neuron in enumerate(readout_nodes):
-                output = len(readout_nodes[n].dend_soma.spikes)
-                outputs.append(output)
-                if learn==True:
-                    error = targets[n] - outputs[n]
-                    make_update(neuron,error,eta,max_offset,updater)
-            hit = 0
-            if no_ties(i,outputs) == True: 
-                hit = 1
-            success+=hit
-            running_acc=np.round(success/seen,2)
-            print(outputs,targets,hit,running_acc)
-            clear_net(readout_net)
-
-    print(f"Epoch {run} accuracy = {running_acc}\n")
-    if run%10==0: picklit(readout_nodes,".",f"readouts_{updater}_{digits}_{samples}")
-    if running_acc == 1:
-        print("Converged!")
-        picklit(readout_nodes,".",f"readouts_converged_{digits}_{samples}")
-
-#%%
-    
-plot_trajectories(readout_nodes)
-
-#%%
-
-for node in readout_nodes:
-    learned_offsets_positive = []
-    learned_offsets_negative = []
-    activity_postive = []
-    activity_negative = []
-    for i,dend in enumerate(node.dendrite_list[2:]):
-        if dend.outgoing[0][1] >= 0:
-            learned_offsets_positive.append(dend.flux_offset)
-            activity_postive.append(np.mean(dend.signal))
-        else:
-            learned_offsets_negative.append(dend.flux_offset)
-            activity_negative.append(np.mean(dend.signal))
-
-    plt.imshow(np.array(learned_offsets_positive).reshape(28,28))
-    plt.title("Postive Updates")
-    plt.show()
-    plt.imshow(np.array(learned_offsets_negative).reshape(28,28))
-    plt.title("Negative Updates")
-    plt.show()
-
-    plt.imshow(np.array(activity_postive).reshape(28,28))
-    plt.title("Postive Activity")
-    plt.show()
-    plt.imshow(np.array(activity_negative).reshape(28,28))
-    plt.title("Negative Activity")
-    plt.show()
-#%%
-    
-print(readout_nodes[0].get_dimensions())
-print(readout_nodes[0].dendrite_list[10].loc)
-print(readout_nodes[0].dend_soma.loc)

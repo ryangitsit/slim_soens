@@ -256,3 +256,37 @@ def plot_by_layer(node,layers,flux=False):
     plt.legend()
     plt.title(node.name)
     plt.show()
+
+def plot_representations(nodes):
+
+    fig,ax = plt.subplots(len(nodes),2,figsize=(8,4*len(nodes)), sharex=True,sharey=True)
+    for n,node in enumerate(nodes):
+        
+        learned_offsets_positive = []
+        learned_offsets_negative = []
+
+        for i,dend in enumerate(node.dendrite_list[2:]):
+            if dend.outgoing[0][1] >= 0:
+                learned_offsets_positive.append(dend.flux_offset)
+            else:
+                learned_offsets_negative.append(dend.flux_offset)
+
+        ax[n][0].imshow(np.array(learned_offsets_positive).reshape(28,28),cmap="Greens")
+        ax[n][1].imshow(np.array(learned_offsets_negative).reshape(28,28),cmap="Reds")
+        ax[n][0].set_xticks([])
+        ax[n][1].set_yticks([])
+
+    plt.show()
+
+def plot_res_spikes(digits,samples,res_spikes):
+    fig,ax = plt.subplots(digits,samples,figsize=(18,12), sharex=True,sharey=True)
+    for i in range(digits):
+        for j in range(samples):
+            print(i,j,end="\r")
+            inpt = res_spikes[i][j]
+            # print(inpt)
+            ax[i][j].plot(inpt[1],inpt[0],'.k',ms=0.25)
+            ax[i][j].set_xticks([])
+            ax[i][j].set_yticks([])
+    # plt.title(f"RNN MNIST Spikes")
+    plt.show()
