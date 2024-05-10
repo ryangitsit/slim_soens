@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import time
 import sys
-from keras.datasets import mnist
+from keras.datasets import mnist, cifar10
 
 sys.path.append('../')
 
@@ -59,21 +59,38 @@ def run_net(nodes,duration=500):
     # plot_nodes(nodes)
 
 
-def make_dataset(digits,samples,start=0):
+def make_dataset(digits,samples,start=0,data_type='mnist'):
     
-    (X_train, y_train), (X_test, y_test) = mnist.load_data()
-    data = [X_train[(y_train == i)][start:start+samples] for i in range(digits)]
+    if data_type=='mnist':
+        (X_train, y_train), (X_test, y_test) = mnist.load_data()
+        shape = 784
+        data = [X_train[(y_train == i)][start:start+samples] for i in range(digits)]
+
+    elif data_type=='cifar':
+        (X_train, y_train), (X_test, y_test) = cifar10.load_data()
+        shape = 32*32*3
+        data = [[] for _ in range(digits)]
+        for i in range(digits):
+            samps = 0
+            for j,y in enumerate(y_train):
+                if y == i:
+                    data[i].append(X_train[j])
+                    samps+=1
+                if samps == samples:
+                    break
+
+    
 
     dataset = [[] for i in range(digits)]
 
     for i,dig in enumerate(data):
         for j,sample in enumerate(dig):
-            dataset[i].append(data[i][j].reshape(784)/255)
+            dataset[i].append(data[i][j].reshape(shape)/255)
 
     return dataset
 
 
-def gen_rnn_spikes(N,p,digits,samples,dataset,start,save,exp_name,rnn_nodes=None):
+def gen_rnn_spikes(N,p,digits,samples,dataset,start,save,exp_name,rnn_nodes=None,data_type='mnist'):
     res_spikes = [[] for _ in range(digits)]
 
     if rnn_nodes is None:
@@ -97,9 +114,9 @@ def gen_rnn_spikes(N,p,digits,samples,dataset,start,save,exp_name,rnn_nodes=None
     return res_spikes, nodes
 
 
-def make_readout_nodes(classes):
+def make_readout_nodes(classes,shape=784):
     weights = [
-        [np.ones((784,))]
+        [np.ones((shape,))]
     ]
     readout_nodes = []
     for n in range(classes):
@@ -113,9 +130,9 @@ def make_readout_nodes(classes):
 
     return readout_nodes
 
-def make_disynaptic_readout_nodes(classes):
+def make_disynaptic_readout_nodes(classes,shape=784):
     weights = [
-        [[-1,1] for _ in range(784)]
+        [[-1,1] for _ in range(shape)]
     ]
     readout_nodes = []
     for n in range(classes):
@@ -145,7 +162,20 @@ def learn_readout_mapping(
     for run in range(runs):
         success = 0
         seen = 0
+
+
+
+        # for j in range(samples):
+
+        #     np.random.seed(run)
+        #     shuffled = np.arange(0,digits,1)
+        #     np.random.shuffle(shuffled)
+
+        #     for i in range(digits):
+        #         digit = shuffled[i]
+            
         for i in range(digits):
+            digit=i
             for j in range(samples):
                 seen+=1
                 for node in readout_nodes:
@@ -162,7 +192,7 @@ def learn_readout_mapping(
                 # plot_nodes(readout_nodes)
 
                 targets = np.zeros(digits,)
-                targets[i] = 1
+                targets[digit] = 1
                 outputs = []
                 for n,neuron in enumerate(readout_nodes):
                     output = len(readout_nodes[n].dend_soma.spikes)
@@ -194,12 +224,17 @@ def learn_readout_mapping(
     return readout_nodes, epoch_accs
 
 
-def get_reservoir_spikes(digits,samples,start,N,p,exp_name,make=False,save=False):
+def get_reservoir_spikes(digits,samples,start,N,p,exp_name,make=False,save=False,data_type='mnist'):
+
+    if data_type=='mnist': 
+        shape=784
+    elif data_type=='cifar':
+        shape=32*32*3
 
     ### Either Make or Load MNIST Data And Subsequent Reservoir###
     if make == True:
-        dataset = make_dataset(digits,samples,start) 
-        res_spikes,rnn_nodes = gen_rnn_spikes(N,p,digits,samples,dataset,start,save,exp_name)
+        dataset = make_dataset(digits,samples,start,data_type=data_type) 
+        res_spikes,rnn_nodes = gen_rnn_spikes(N,p,digits,samples,dataset,start,save,exp_name,data_type=data_type)
 
         if save==True:
             picklit(dataset,f"../results/mnist_study/{exp_name}/",f"mnist_data_{digits}_{samples}_start_{start}")
@@ -209,8 +244,14 @@ def get_reservoir_spikes(digits,samples,start,N,p,exp_name,make=False,save=False
     return dataset, res_spikes, rnn_nodes
     
     
-def train(digits,samples,res_spikes,updater,eta,max_offset,runs,exp_name):
-    readout_nodes = make_disynaptic_readout_nodes(digits)
+def train(digits,samples,res_spikes,updater,eta,max_offset,runs,exp_name,data_type='mnist'):
+
+    if data_type=='mnist': 
+        shape=784
+    elif data_type=='cifar':
+        shape=32*32*3
+
+    readout_nodes = make_disynaptic_readout_nodes(digits,shape=shape)
     readout_nodes, learning_accs = learn_readout_mapping(
         digits,
         samples,
@@ -225,14 +266,20 @@ def train(digits,samples,res_spikes,updater,eta,max_offset,runs,exp_name):
     picklit(learning_accs,f"../results/mnist_study/{exp_name}/",f"learning_accs")
     return readout_nodes
 
-def test(digits,samples,start,readout_nodes,rnn_nodes=None):
+def test(digits,samples,start,readout_nodes,rnn_nodes=None,data_type='mnist'):
+
+    if data_type=='mnist': 
+        shape=784
+    elif data_type=='cifar':
+        shape=32*32*3
+
     test_start = start+digits*samples
     test_samples = int(samples*.2)
     dataset = make_dataset(digits,test_samples,test_start)
     save = True
 
     test_res_spikes,rnn_nodes = gen_rnn_spikes(
-        N,p,digits,test_samples,dataset,test_start,save,exp_name,rnn_nodes=rnn_nodes
+        N,p,digits,test_samples,dataset,test_start,save,exp_name,rnn_nodes=rnn_nodes,data_type=data_type
         )
     
     readout_nodes, test_accs = learn_readout_mapping(
@@ -251,22 +298,37 @@ def test(digits,samples,start,readout_nodes,rnn_nodes=None):
     
 np.random.seed(10)
 
+# data_type='mnist'
+# digits = 10
+# samples = 5420
+# start=0
+# runs = 10
+
+data_type = 'cifar'
 digits = 10
-samples = 50
+samples = 5000
 start=0
-runs = 3
+runs = 100
 
 
-N = 784
+
+if data_type=='mnist': 
+    shape=784
+elif data_type=='cifar':
+    shape=32*32*3
+
+N = shape
 p = 1
 updater = 'symmetric'
 eta = 0.0005
 max_offset = 0.4 #0.1675
 
-exp_name = "test_run"
+# exp_name = "the_big_one"
+exp_name='the_big_cifar'
 
-dataset, res_spikes, rnn_nodes = get_reservoir_spikes(digits,samples,start,N,p,exp_name,make=True,save=True)
-readout_nodes = train(digits,samples,res_spikes,updater,eta,max_offset,runs,exp_name)
-test(digits,samples,start,readout_nodes,rnn_nodes=rnn_nodes)
+dataset, res_spikes, rnn_nodes = get_reservoir_spikes(digits,samples,start,N,p,exp_name,make=True,save=True,data_type=data_type)
+# plot_res_spikes(digits,samples,res_spikes)
+readout_nodes = train(digits,samples,res_spikes,updater,eta,max_offset,runs,exp_name,data_type=data_type)
+test(digits,samples,start,readout_nodes,rnn_nodes=rnn_nodes,data_type=data_type)
 
 
