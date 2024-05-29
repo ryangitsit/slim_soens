@@ -60,6 +60,14 @@ def run_net(nodes,duration=500):
 
 
 def make_dataset(digits,samples,start=0,data_type='mnist'):
+
+    '''
+    Prepares dataset in format suitable for remaining script
+     - samples are stored as integer arrays of length `shape` 
+     - (unraveled from 2d/3d data
+     - data matrix is organized suh that rows correspond to class
+     - columns to samples
+    '''
     
     if data_type=='mnist':
         (X_train, y_train), (X_test, y_test) = mnist.load_data()
@@ -156,7 +164,8 @@ def learn_readout_mapping(
         eta=0.0005,
         max_offset=0.4,
         exp_name='test',
-        learn=True
+        learn=True,
+        validate=False
         ):
     epoch_accs = []
     for run in range(runs):
@@ -214,6 +223,10 @@ def learn_readout_mapping(
                 readout_nodes,
                 f"../results/mnist_study/{exp_name}/",f"readouts_{updater}_{digits}_{samples}_{start}_at_{run}"
                 )
+            if validate==True:
+                test(
+                    digits,samples,start,readout_nodes,data_type=data_type,validate=validate
+                    )
             if running_acc == 1:
                 print("Converged!")
                 picklit(
@@ -244,7 +257,7 @@ def get_reservoir_spikes(digits,samples,start,N,p,exp_name,make=False,save=False
     return dataset, res_spikes, rnn_nodes
     
     
-def train(digits,samples,res_spikes,updater,eta,max_offset,runs,exp_name,data_type='mnist'):
+def train(digits,samples,res_spikes,updater,eta,max_offset,runs,exp_name,data_type='mnist',save=True,validate=False):
 
     if data_type=='mnist': 
         shape=784
@@ -259,14 +272,15 @@ def train(digits,samples,res_spikes,updater,eta,max_offset,runs,exp_name,data_ty
         res_spikes,
         runs=runs,
         eta=eta,
-        max_offset=max_offset,
+        max_offset=max_offset,  
         exp_name=exp_name,
-        learn=True
+        learn=True,
+        validate=validate
         )
-    picklit(learning_accs,f"../results/mnist_study/{exp_name}/",f"learning_accs")
-    return readout_nodes
+    if save==True: picklit(learning_accs,f"../results/mnist_study/{exp_name}/",f"learning_accs")
+    return readout_nodes, learning_accs
 
-def test(digits,samples,start,readout_nodes,rnn_nodes=None,data_type='mnist'):
+def test(digits,samples,start,readout_nodes,rnn_nodes=None,data_type='mnist',save=True,validate=False):
 
     if data_type=='mnist': 
         shape=784
@@ -276,7 +290,6 @@ def test(digits,samples,start,readout_nodes,rnn_nodes=None,data_type='mnist'):
     test_start = start+digits*samples
     test_samples = int(samples*.2)
     dataset = make_dataset(digits,test_samples,test_start)
-    save = True
 
     test_res_spikes,rnn_nodes = gen_rnn_spikes(
         N,p,digits,test_samples,dataset,test_start,save,exp_name,rnn_nodes=rnn_nodes,data_type=data_type
@@ -291,7 +304,19 @@ def test(digits,samples,start,readout_nodes,rnn_nodes=None,data_type='mnist'):
         learn=False
         )
     print(f"Testing Accuracy of {test_accs[-1]*100} on {test_samples} new samples of {digits} classes.")
-    picklit(test_accs,f"../results/mnist_study/{exp_name}/",f"test_accs")
+    name = 'test_accs'
+    if validate==True:
+        name = 'val_accs'
+    if save==True:
+        try:
+            print("retrieved tests")
+            test_accs_arr = picklin(f"../results/mnist_study/{exp_name}/",name)
+            test_accs_arr.append(test_accs[-1])
+        except:
+            print("created tests")
+            test_accs_arr = test_accs
+            
+        picklit(test_accs_arr,f"../results/mnist_study/{exp_name}/",name)
 
 
 #%%
@@ -304,11 +329,12 @@ np.random.seed(10)
 # start=0
 # runs = 10
 
-data_type = 'cifar'
-digits = 10
-samples = 5000
+# data_type = 'cifar'
+data_type='mnist'
+digits = 3 
+samples = 50
 start=0
-runs = 100
+runs = 10
 
 
 
@@ -324,11 +350,63 @@ eta = 0.0005
 max_offset = 0.4 #0.1675
 
 # exp_name = "the_big_one"
-exp_name='the_big_cifar'
-
-dataset, res_spikes, rnn_nodes = get_reservoir_spikes(digits,samples,start,N,p,exp_name,make=True,save=True,data_type=data_type)
-# plot_res_spikes(digits,samples,res_spikes)
-readout_nodes = train(digits,samples,res_spikes,updater,eta,max_offset,runs,exp_name,data_type=data_type)
-test(digits,samples,start,readout_nodes,rnn_nodes=rnn_nodes,data_type=data_type)
+exp_name='valtest'
 
 
+def run_experiment(data_type,digits,samples,start,runs,N,p,updater,eta,max_offset,exp_name):
+
+    dataset, res_spikes, rnn_nodes = get_reservoir_spikes(
+        digits,samples,start,N,p,exp_name,make=True,save=True,data_type=data_type
+        )
+    
+    # plot_res_spikes(digits,samples,res_spikes)
+    readout_nodes = train(
+        digits,samples,res_spikes,updater,eta,max_offset,runs,exp_name,data_type=data_type
+        )
+    
+    test(
+        digits,samples,start,readout_nodes,rnn_nodes=rnn_nodes,data_type=data_type
+        )
+
+# run_experiment(data_type,digits,samples,start,runs,N,p,updater,eta,max_offset,exp_name)
+
+def run_train_val(data_type,digits,samples,start,runs,N,p,updater,eta,max_offset,exp_name):
+
+    dataset, res_spikes, rnn_nodes = get_reservoir_spikes(
+        digits,samples,start,N,p,exp_name,make=True,save=True,data_type=data_type
+        )
+        
+    # for run in range(runs):
+        
+    # plot_res_spikes(digits,samples,res_spikes)
+    readout_nodes, learning_accs = train(
+        digits,samples,res_spikes,updater,eta,max_offset,runs,exp_name,data_type=data_type,validate=True
+        )
+    
+    test_start = start+digits*samples
+    test_samples = int(samples*.2)
+    start = test_start + test_samples*digits
+
+    test(
+        digits,samples,start,readout_nodes,rnn_nodes=rnn_nodes,data_type=data_type
+        )
+
+run_train_val(data_type,digits,samples,start,runs,N,p,updater,eta,max_offset,exp_name)
+
+'''
+run_experiment
+ - get_reservoir_spikes
+    - make_dataset
+    - get_rnn_spikes
+        - make_rnn
+        - OR load rnn
+        - add_clamped_input
+        - run_net
+        - optional save
+    - OR load rnn spikes
+    - RETURN dataset, res_spikes, rnn_nodes
+
+ - train
+    - 
+
+'''
