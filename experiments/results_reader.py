@@ -17,7 +17,7 @@ def plot_training(path):
     accs = np.array(picklin(path,'learning_accs'))*100
     test_accs = np.array(picklin(path,'test_accs'))*100
     val_accs = np.array(picklin(path,'val_accs'))*100
-    print(test_accs)
+    # print(test_accs)
 
     plt.title("Training Accuracy per Epoch", fontsize=20)
     plt.xlabel("Epoch", fontsize=14)
@@ -29,7 +29,7 @@ def plot_training(path):
     plt.show()
 
 dr = 'mnist_study'
-exp = 'valtest'
+exp = 'valtest_500'
 path = os.path.join('../results',dr,exp)
 
 plot_training(path)
