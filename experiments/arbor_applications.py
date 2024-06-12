@@ -242,13 +242,13 @@ def get_reservoir_spikes(digits,samples,start,N,p,exp_name,make=False,save=False
 
     else:
         dataset = picklin(
-            f"../results/mnist_study/{exp_name}/",f"mnist_spikes_{digits}_{samples}_start_{start}"
+            f"../results/mnist_study/{exp_name}/",f"mnist_data_{digits}_{samples}_start_{start}"
             )
         res_spikes = picklin(
             f"../results/mnist_study/{exp_name}/",f"rnn_spikes_{digits}_{samples}_{start}"
             )
         rnn_nodes = picklin(
-            f"../results/mnist_study/{exp_name}/",f"res_nodes_{digits}_{samples}_{start}"
+            f"../results/mnist_study/{exp_name}/",f"res_nodes_784_1_{digits}_{samples}_{start}"
             )
     return dataset, res_spikes, rnn_nodes
     
@@ -260,7 +260,15 @@ def train(digits,samples,res_spikes,updater,eta,max_offset,runs,exp_name,data_ty
     elif data_type=='cifar':
         shape=32*32*3
 
-    readout_nodes = make_disynaptic_readout_nodes(digits,shape=shape)
+    print("Training")
+    resume=False
+    if resume==True:
+        rerun=10
+        readout_nodes = picklin(f"../results/mnist_study/{exp_name}/",f"readouts_symmetric_{digits}_{samples}_0_at_{rerun}")
+        rnn_nodes = picklin(f"../results/mnist_study/{exp_name}/","res_nodes_784_1_10_5420_0")
+    else:
+        readout_nodes = make_disynaptic_readout_nodes(digits,shape=shape)
+        rnn_nodes = None
     readout_nodes, learning_accs = learn_readout_mapping(
         digits,
         samples,
@@ -319,6 +327,7 @@ def test(digits,samples,start,readout_nodes,rnn_nodes=None,data_type='mnist',sav
     
 np.random.seed(10)
 
+# exp_name = "the_big_one"
 # data_type='mnist'
 # digits = 10
 # samples = 5420
@@ -326,9 +335,16 @@ np.random.seed(10)
 # runs = 10
 
 # data_type = 'cifar'
+# data_type='mnist'
+# digits = 10
+# samples = 50
+# start=0
+# runs = 10
+
+exp_name = "mid_mnist_2"
 data_type='mnist'
 digits = 10
-samples = 50
+samples = 1000
 start=0
 runs = 10
 
@@ -345,14 +361,14 @@ updater = 'symmetric'
 eta = 0.0005
 max_offset = 0.4 #0.1675
 
-# exp_name = "the_big_one"
-exp_name='valtest_500'
+
+# exp_name='valtest_500'
 
 
 def run_experiment(data_type,digits,samples,start,runs,N,p,updater,eta,max_offset,exp_name):
 
     dataset, res_spikes, rnn_nodes = get_reservoir_spikes(
-        digits,samples,start,N,p,exp_name,make=True,save=True,data_type=data_type
+        digits,samples,start,N,p,exp_name,make=False,save=False,data_type=data_type
         )
     
     # plot_res_spikes(digits,samples,res_spikes)
@@ -364,7 +380,7 @@ def run_experiment(data_type,digits,samples,start,runs,N,p,updater,eta,max_offse
         digits,samples,start,readout_nodes,rnn_nodes=rnn_nodes,data_type=data_type
         )
 
-# run_experiment(data_type,digits,samples,start,runs,N,p,updater,eta,max_offset,exp_name)
+run_experiment(data_type,digits,samples,start,runs,N,p,updater,eta,max_offset,exp_name)
 
 def run_train_val(data_type,digits,samples,start,runs,N,p,updater,eta,max_offset,exp_name):
 
@@ -387,7 +403,7 @@ def run_train_val(data_type,digits,samples,start,runs,N,p,updater,eta,max_offset
         digits,samples,start,readout_nodes,rnn_nodes=rnn_nodes,data_type=data_type,validate=False
         )
 
-run_train_val(data_type,digits,samples,start,runs,N,p,updater,eta,max_offset,exp_name)
+# run_train_val(data_type,digits,samples,start,runs,N,p,updater,eta,max_offset,exp_name)
 
 '''
 run_experiment

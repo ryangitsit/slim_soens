@@ -15,7 +15,7 @@ def update_offset(dend,update,offmax):
         dend.flux_offset = np.min([dend.flux_offset, offmax])
     elif dend.flux_offset < 0:
         dend.flux_offset = np.max([dend.flux_offset, -1*offmax])
-    dend.update_traj.append(dend.flux_offset)
+    # dend.update_traj.append(dend.flux_offset)
 
 def symmetric_udpater(error,eta,dend,offmax,layers):
     """
@@ -72,7 +72,7 @@ def splitting_udpater(error,eta,dend,offmax):
     if np.sign(dend.flux_offset) != np.sign(dend.outgoing[0][1]):
         # print("Flip",dend.flux_offset,dend.outgoing[0][1])
         dend.outgoing[0][1] = dend.outgoing[0][1]*-1
-    dend.update_traj.append(dend.flux_offset)
+    # dend.update_traj.append(dend.flux_offset)
     # update_offset(dend,update,offmax)
 
 
@@ -80,8 +80,8 @@ def make_update(node,error,eta,offmax,updater):
     for i,dend in enumerate(node.dendrite_list):
         if np.any(dend.flux>0.5):  dend.high_roll += 1
         if np.any(dend.flux<-0.5): dend.low_roll  += 1
-        if not hasattr(dend,'update_traj'): 
-            dend.update_traj = [dend.flux_offset]
+        # if not hasattr(dend,'update_traj'): 
+        #     dend.update_traj = [dend.flux_offset]
             # print(dend.update_traj)
         if (not isinstance(dend,components.Refractory) 
             and not isinstance(dend,components.Soma)):
