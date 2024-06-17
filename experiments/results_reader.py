@@ -11,26 +11,36 @@ from system_functions import *
 
 #%%
 
-def plot_training(path):
+def plot_training(path,train=True,test=False,val=False):
     plt.style.use('seaborn-v0_8-muted')
     plt.figure(figsize=(8,4))
-    accs = np.array(picklin(path,'learning_accs'))*100
-    test_accs = np.array(picklin(path,'test_accs'))*100
-    val_accs = np.array(picklin(path,'val_accs'))*100
+    if train==True: 
+        accs = np.array(picklin(path,'learning_accs'))*100
+        plt.plot(accs,label="Training Performance")
+    if test==True: 
+        test_accs = np.array(picklin(path,'test_accs'))*100
+        plt.axhline(test_accs[-1],linestyle='--',color='r',label="Test Performance")
+    if val==True: 
+        val_accs = np.array(picklin(path,'val_accs'))*100
+        plt.plot(val_accs,label="Validation Performance")
     # print(test_accs)
 
     plt.title("Training Accuracy per Epoch", fontsize=20)
     plt.xlabel("Epoch", fontsize=14)
     plt.ylabel("Classification Accuracy", fontsize=14)
-    plt.plot(accs,label="Training Performance")
-    plt.plot(val_accs,label="Validation Performance")
-    plt.axhline(test_accs[-1],linestyle='--',color='r',label="Test Performance")
+    plt.ylim(0,100)
+    
+
     plt.legend()
     plt.show()
 
 dr = 'mnist_study'
 exp = 'valtest_500'
+
+dr = 'mnist_study'
+exp = 'cifar_small_2'
+
 path = os.path.join('../results',dr,exp)
 
-plot_training(path)
+plot_training(path,train=True,test=False,val=False)
 # %%

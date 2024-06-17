@@ -203,6 +203,7 @@ def learn_readout_mapping(
                 print(outputs,targets,hit,running_acc)
                 clear_net(readout_net)
         epoch_accs.append(running_acc)
+        picklit(epoch_accs,f"../results/mnist_study/{exp_name}/",f"learning_accs")
         print(f"Epoch {run} accuracy = {running_acc}\n")
         if learn==True:
             if run%10==0: 
@@ -341,12 +342,20 @@ np.random.seed(10)
 # start=0
 # runs = 10
 
-exp_name = "mid_mnist_2"
-data_type='mnist'
-digits = 10
-samples = 1000
+# exp_name = "mid_mnist_2"
+# data_type='mnist'
+# digits = 10
+# samples = 1000
+# start=0
+# runs = 10
+
+
+exp_name = "cifar_small_2"
+data_type = 'cifar'
+digits = 3
+samples = 10
 start=0
-runs = 10
+runs = 1000
 
 
 
@@ -368,7 +377,7 @@ max_offset = 0.4 #0.1675
 def run_experiment(data_type,digits,samples,start,runs,N,p,updater,eta,max_offset,exp_name):
 
     dataset, res_spikes, rnn_nodes = get_reservoir_spikes(
-        digits,samples,start,N,p,exp_name,make=False,save=False,data_type=data_type
+        digits,samples,start,N,p,exp_name,make=True,save=True,data_type=data_type
         )
     
     # plot_res_spikes(digits,samples,res_spikes)
