@@ -44,3 +44,7 @@ path = os.path.join('../results',dr,exp)
 
 plot_training(path,train=True,test=False,val=False)
 # %%
+
+string = "ra_neuron_to_dendrite_ri__beta_di_6.28319e+05__d_phi_r_0.2000__s_th_0.01__dt_0.10ns__ib_n_1.6024__ib_d_1.8524__working_master.soen"
+print(len(string))
+# %%

@@ -72,3 +72,14 @@ def plot_representations(nodes,shape=(28,28),rgb_dims=1):
     plt.show()
 plot_representations(readout_nodes,shape=(32,32),rgb_dims=3)
 # %%
+
+# dct = {
+#     "name":"rain",
+#     "date":1000
+# }
+
+# def print_fun(name="johndoe",date=0):
+#     print(name)
+#     print(date)
+
+# print_fun(**dct)

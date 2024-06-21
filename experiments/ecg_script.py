@@ -14,7 +14,7 @@ from weight_structures import *
 from learning_rules import *
 from plotting import *
 
-(reg_spikes, anom_spikes) = picklin(".","ecg_spikes")
+(reg_spikes, anom_spikes) = picklin(".","../results/ecg/ecg_spikes")
 
 idx = np.random.randint(1000)
 print(reg_spikes[idx])
@@ -101,7 +101,7 @@ window = int(duration/patterns)
 bins = 16
 classes = 2
 
-# pattern_nodes,chunks = make_pattern_nodes(patterns,classes,ff=1.25)
+pattern_nodes,chunks = make_pattern_nodes(patterns,classes,ff=1.25)
 
 def raster_plot_rows(rows):
     times = []
@@ -171,7 +171,7 @@ def raster_plot_rows(rows):
 #             print(f"Run {run}  --  sample {trn}",end="\r")
 
 
-# picklit(pattern_nodes,".","ecg_pattern_nodes")
+# picklit(pattern_nodes,"../results/ecg/","ecg_pattern_nodes")
 # plot_trajectories(pattern_nodes)
 
 #%%
@@ -210,7 +210,7 @@ def raster_plot_rows(rows):
 
 # %%
 
-pattern_nodes = picklin(".","ecg_pattern_nodes")
+pattern_nodes = picklin("../results/ecg/","ecg_pattern_nodes")
 
 def make_timing_neuron(name=None):
     step = int(141/3)#35
@@ -384,8 +384,8 @@ def run_net(
 
 
 nodes = pattern_nodes +[timing_neuron_anom]+[timing_neuron_reg]
-test  = 1
-print(test)
+test  = 400
+print(f"Testing on {test} unseen samples.")
 
 
 # train = 1600
@@ -403,7 +403,7 @@ plotting=False
 for tst in range(train,train+test):
     # if tst==train:plotting=False #(319+train):plotting=True
 
-    plotting = True
+    # plotting = True
     tst = (319+train)
 
     outputs_reg,first_spks_reg = run_net(nodes,reg_spikes[tst],learn=False,plotting=plotting,duration=200)
@@ -440,34 +440,34 @@ print(f"\nTesting raw accuracy of {np.round(100*straight_acc/(test*2),2)}\n")
 print(f"Max Difference {np.max(max_diff)} at test {np.argmax(max_diff)}")
 print(f"Centroid line {np.mean(centroids)}")
 print(f"Linear Accuracy {np.round(100*linear_acc/(test*2))}")
-# %%
-
-success=0
-max_diff = []
-centroids = []
-linear_acc = 0
-for tst in range(train,train+test):
-    plotting = False
-    outputs_reg,first_spks_reg    = run_net(nodes,reg_spikes[tst],learn=False,plotting=plotting,duration=200)
-
-
-    outputs_anom,first_spks_anom = run_net(nodes,anom_spikes[tst],learn=False,plotting=plotting,duration=200)
-
-
-
-    if outputs_anom[-2]>0 and ((first_spks_reg[-2] > first_spks_anom[-2]) or outputs_reg[-1] < outputs_anom[-1]):
-            hit = 1
-    else:
-        hit = 0
-    diff = first_spks_reg[-2]-first_spks_anom[-2]
-    max_diff.append(diff)
-    success += hit
-
-    print(tst,outputs_reg,outputs_anom,hit,first_spks_reg[-2],first_spks_anom[-2],diff,end='\r')    
-
-
-print(f"\nTesting accuracy of {np.round(100*success/(test),2)}")
-print(f"Max Difference {np.max(max_diff)} at test {np.argmax(max_diff)}")
-# print(f"Centroid line {np.mean(centroids)}")   
-# print(f"Linear Accuracy {np.round(100*linear_acc/(test*2))}")
 # # %%
+
+# success=0
+# max_diff = []
+# centroids = []
+# linear_acc = 0
+# for tst in range(train,train+test):
+#     plotting = False
+#     outputs_reg,first_spks_reg    = run_net(nodes,reg_spikes[tst],learn=False,plotting=plotting,duration=200)
+
+
+#     outputs_anom,first_spks_anom = run_net(nodes,anom_spikes[tst],learn=False,plotting=plotting,duration=200)
+
+
+
+#     if outputs_anom[-2]>0 and ((first_spks_reg[-2] > first_spks_anom[-2]) or outputs_reg[-1] < outputs_anom[-1]):
+#             hit = 1
+#     else:
+#         hit = 0
+#     diff = first_spks_reg[-2]-first_spks_anom[-2]
+#     max_diff.append(diff)
+#     success += hit
+
+#     print(tst,outputs_reg,outputs_anom,hit,first_spks_reg[-2],first_spks_anom[-2],diff,end='\r')    
+
+
+# print(f"\nTesting accuracy of {np.round(100*success/(test),2)}")
+# print(f"Max Difference {np.max(max_diff)} at test {np.argmax(max_diff)}")
+# # print(f"Centroid line {np.mean(centroids)}")   
+# # print(f"Linear Accuracy {np.round(100*linear_acc/(test*2))}")
+# # # %%

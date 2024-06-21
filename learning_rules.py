@@ -1,7 +1,7 @@
 import numpy as np
 import components
 
-def update_offset(dend,update,offmax):
+def update_offset(dend,update,offmax,traj):
     # print("here")
 
 
@@ -15,9 +15,9 @@ def update_offset(dend,update,offmax):
         dend.flux_offset = np.min([dend.flux_offset, offmax])
     elif dend.flux_offset < 0:
         dend.flux_offset = np.max([dend.flux_offset, -1*offmax])
-    # dend.update_traj.append(dend.flux_offset)
+    if traj==True: dend.update_traj.append(dend.flux_offset)
 
-def symmetric_udpater(error,eta,dend,offmax,layers):
+def symmetric_udpater(error,eta,dend,offmax,layers,traj):
     """
     Try this for synaptic layer only
     Play with zero-signal update coefficient
@@ -38,9 +38,9 @@ def symmetric_udpater(error,eta,dend,offmax,layers):
     else:
         update = np.mean(dend.signal)*error*eta
 
-    update_offset(dend,update,offmax)
+    update_offset(dend,update,offmax,traj)
 
-def choosing_udpater(error,eta,dend,offmax,layers):
+def choosing_udpater(error,eta,dend,offmax,layers,traj):
     """
 
     """
@@ -55,9 +55,9 @@ def choosing_udpater(error,eta,dend,offmax,layers):
     else:
         update = np.mean(dend.signal)*error*eta
 
-    update_offset(dend,update,offmax)
+    update_offset(dend,update,offmax,traj)
 
-def splitting_udpater(error,eta,dend,offmax):
+def splitting_udpater(error,eta,dend,offmax,traj):
     """
     """
     # # print("splitting update")
@@ -76,37 +76,38 @@ def splitting_udpater(error,eta,dend,offmax):
     # update_offset(dend,update,offmax)
 
 
-def make_update(node,error,eta,offmax,updater):
+def make_update(node,error,eta,offmax,updater,traj=False):
     for i,dend in enumerate(node.dendrite_list):
         if np.any(dend.flux>0.5):  dend.high_roll += 1
         if np.any(dend.flux<-0.5): dend.low_roll  += 1
-        # if not hasattr(dend,'update_traj'): 
-        #     dend.update_traj = [dend.flux_offset]
+
+        if traj==True and not hasattr(dend,'update_traj'): 
+            dend.update_traj = [dend.flux_offset]
             # print(dend.update_traj)
         if (not isinstance(dend,components.Refractory) 
             and not isinstance(dend,components.Soma)):
             if hasattr(dend,'update'):
                 if dend.update==True:
                     if updater == 'symmetric':
-                        symmetric_udpater(error,eta,dend,offmax,node.layers)
+                        symmetric_udpater(error,eta,dend,offmax,node.layers,traj)
                     elif updater == 'classic':
                         update = np.mean(dend.signal)*error*eta
-                        update_offset(dend,update,offmax)
+                        update_offset(dend,update,offmax,traj)
                     elif updater == 'chooser':
-                        choosing_udpater(error,eta,dend,offmax,node.layers)
+                        choosing_udpater(error,eta,dend,offmax,node.layers,traj)
                     elif updater == 'splitter':
-                        splitting_udpater(error,eta,dend,offmax)
+                        splitting_udpater(error,eta,dend,offmax,traj)
 
             else:
                 if updater == 'symmetric':
-                    symmetric_udpater(error,eta,dend,offmax,node.layers)
+                    symmetric_udpater(error,eta,dend,offmax,node.layers,traj)
                 elif updater == 'classic':
                     update = np.mean(dend.signal)*error*eta
-                    update_offset(dend,update,offmax)
+                    update_offset(dend,update,offmax,traj)
                 elif updater == 'chooser':
-                    choosing_udpater(error,eta,dend,offmax,node.layers)
+                    choosing_udpater(error,eta,dend,offmax,node.layers,traj)
                 elif updater == 'splitter':
-                    splitting_udpater(error,eta,dend,offmax)
+                    splitting_udpater(error,eta,dend,offmax,traj)
 
                 # update_offset(dend,error,eta,offmax)
 

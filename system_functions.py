@@ -347,3 +347,6 @@ def print_dict(dct):
     for i,(k,v) in enumerate(dct.items()):
         print(f" {i}   {k}  {v}")
     print("\n")
+
+def rounded_percentage(num,total):
+    return np.round(100*num/total,2)

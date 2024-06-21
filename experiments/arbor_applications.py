@@ -161,14 +161,16 @@ def learn_readout_mapping(
         readout_nodes,
         res_spikes,
         runs=1,
+        rerun_start=0,
         eta=0.0005,
         max_offset=0.4,
         exp_name='test',
         learn=True,
-        validate=False
+        validate=False,
+        save_mod=100
         ):
     epoch_accs = []
-    for run in range(runs):
+    for run in range(rerun_start, rerun_start+runs):
         success = 0
         seen = 0
         for i in range(digits):
@@ -206,7 +208,7 @@ def learn_readout_mapping(
         picklit(epoch_accs,f"../results/mnist_study/{exp_name}/",f"learning_accs")
         print(f"Epoch {run} accuracy = {running_acc}\n")
         if learn==True:
-            if run%10==0: 
+            if run%save_mod==0: 
                 picklit(
                     readout_nodes,
                     f"../results/mnist_study/{exp_name}/",f"readouts_{updater}_{digits}_{samples}_{start}_at_{run}"
@@ -216,13 +218,13 @@ def learn_readout_mapping(
                 test(
                     digits,samples,start,readout_nodes,data_type=data_type,validate=validate
                     )
-            if running_acc == 1:
-                print("Converged!")
-                picklit(
-                    readout_nodes,
-                    f"../results/mnist_study/{exp_name}/",f"readouts_converged_{updater}_{digits}_{samples}_{start}_at_{run}"
-                    )
-                return readout_nodes, epoch_accs
+        if running_acc == 1:
+            print("Converged!")
+            picklit(
+                readout_nodes,
+                f"../results/mnist_study/{exp_name}/",f"readouts_converged_{updater}_{digits}_{samples}_{start}_at_{run}"
+                )
+            return readout_nodes, epoch_accs
     return readout_nodes, epoch_accs
 
 
@@ -249,7 +251,7 @@ def get_reservoir_spikes(digits,samples,start,N,p,exp_name,make=False,save=False
             f"../results/mnist_study/{exp_name}/",f"rnn_spikes_{digits}_{samples}_{start}"
             )
         rnn_nodes = picklin(
-            f"../results/mnist_study/{exp_name}/",f"res_nodes_784_1_{digits}_{samples}_{start}"
+            f"../results/mnist_study/{exp_name}/",f"res_nodes_{shape}_1_{digits}_{samples}_{start}"
             )
     return dataset, res_spikes, rnn_nodes
     
@@ -262,12 +264,13 @@ def train(digits,samples,res_spikes,updater,eta,max_offset,runs,exp_name,data_ty
         shape=32*32*3
 
     print("Training")
-    resume=False
+    resume=True
     if resume==True:
-        rerun=10
-        readout_nodes = picklin(f"../results/mnist_study/{exp_name}/",f"readouts_symmetric_{digits}_{samples}_0_at_{rerun}")
-        rnn_nodes = picklin(f"../results/mnist_study/{exp_name}/","res_nodes_784_1_10_5420_0")
+        rerun_start=990
+        readout_nodes = picklin(f"../results/mnist_study/{exp_name}/",f"readouts_symmetric_{digits}_{samples}_0_at_{rerun_start}")
+        rnn_nodes = picklin(f"../results/mnist_study/{exp_name}/",f"res_nodes_{shape}_1_{digits}_{samples}_0")
     else:
+        rerun_start = 0
         readout_nodes = make_disynaptic_readout_nodes(digits,shape=shape)
         rnn_nodes = None
     readout_nodes, learning_accs = learn_readout_mapping(
@@ -276,6 +279,7 @@ def train(digits,samples,res_spikes,updater,eta,max_offset,runs,exp_name,data_ty
         readout_nodes,
         res_spikes,
         runs=runs,
+        rerun_start=rerun_start,
         eta=eta,
         max_offset=max_offset,  
         exp_name=exp_name,
@@ -367,7 +371,7 @@ elif data_type=='cifar':
 N = shape
 p = 1
 updater = 'symmetric'
-eta = 0.0005
+eta = 0.00005
 max_offset = 0.4 #0.1675
 
 
@@ -377,7 +381,7 @@ max_offset = 0.4 #0.1675
 def run_experiment(data_type,digits,samples,start,runs,N,p,updater,eta,max_offset,exp_name):
 
     dataset, res_spikes, rnn_nodes = get_reservoir_spikes(
-        digits,samples,start,N,p,exp_name,make=True,save=True,data_type=data_type
+        digits,samples,start,N,p,exp_name,make=False,save=False,data_type=data_type
         )
     
     # plot_res_spikes(digits,samples,res_spikes)
