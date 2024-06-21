@@ -49,7 +49,7 @@ def spikes_to_chunks(in_spikes,start,stop,bins):
     for c,channel in enumerate(in_spikes):
         for spk in channel:
             if spk >= start and spk < stop:
-                chunk_spikes[c].append(spk-start)
+                chunk_spikes[c].append(spk-start) #***
     return chunk_spikes
 
 def run_net(
@@ -88,8 +88,8 @@ def run_net(
 
 def learn_chunks(
         pattern_nodes,
-        chunks,
-        train      = 1600,
+        chunks, 
+        train      = 100,
         runs       = 1,
         eta        = 0.005,
         max_offset = 0.1675,
@@ -98,18 +98,20 @@ def learn_chunks(
         patterns   = 3,
         bins       = 16,
         classes    = 2,
+        plotting   = False,
     ):
 
     window = int(duration/patterns)
     collect_chunks = [[[] for _ in range(bins)] for _ in range(patterns)]
     collect_chunks_anoms = [[[] for _ in range(bins)] for _ in range(patterns)]
-
+    laccs = []
     for run in range(runs):   
-        eta_decay = eta/(run+1)
-        success = 0 
+        # eta_decay = eta/(run+1)
+        # if run%50==0: plotting=True
+        # else:plotting=False
         for trn in range(train):
             # raster_plot_rows(reg_spikes[trn])
-
+            success = 0
             for i, chunk in enumerate(chunks):
 
                 start = i*window
@@ -119,22 +121,29 @@ def learn_chunks(
                 in_spikes = reg_spikes[trn]
                 chunk_spikes = spikes_to_chunks(in_spikes,start,stop,bins)
                 for r,row in enumerate(chunk_spikes):
-                    collect_chunks[i][r].append(len(row))
+                    collect_chunks[i][r].append(len(row)) #***
                 # raster_plot_rows(chunk_spikes)
                 targets = np.zeros((patterns*classes,))
                 targets[patterns*(classes-1)+i] = 1
-
+                # print(targets)
                 outputs = run_net(
                     pattern_nodes,
                     chunk_spikes,
                     targets=targets,
-                    eta=eta_decay,
+                    eta=eta,
                     max_offset=max_offset,
                     updater=updater,
                     duration=window,
+                    plotting=plotting
                     # plotting=True
                     )
-
+               
+                if np.argmax(targets[patterns*(classes-1)+i])==np.argmax(outputs) and sum(outputs)>0:
+                    hit = 1
+                    success+=1
+                else: 
+                    hit = 0
+                # print(targets,outputs,hit)
 
                 ### Anomolous ECG Signals ###
                 in_spikes = anom_spikes[trn]
@@ -143,22 +152,36 @@ def learn_chunks(
                     collect_chunks_anoms[i][r].append(len(row))
                 targets = np.zeros((patterns*classes,))
                 targets[i] = 1
-
+                
                 outputs = run_net(
                     pattern_nodes,
                     chunk_spikes,
                     targets=targets,
-                    eta=eta_decay,
+                    eta=eta,
                     max_offset=max_offset,
                     updater=updater,
-                    duration=window
+                    duration=window,
+                    plotting=plotting
                     )
+                
+                if np.argmax(targets[patterns*(classes-1)+i])==np.argmax(outputs) and sum(outputs)>0:
+                    hit = 1
+                    success+=1
+                else: 
+                    hit = 0
+                # print(targets,outputs,hit)
 
-                print(f"Run {run}  --  sample {trn}",end="\r")
+                
+                # print(f"Run {run}  --  sample {trn}",end="\r")
+            acc = rounded_percentage(success,(patterns*classes))
+            # print("-"*10,acc,"-"*10)
+            laccs.append(acc)
+    plt.plot(laccs)
+    plt.show()
     return pattern_nodes
 
 
-pattern_nodes = picklin("../results/ecg/","ecg_pattern_nodes")
+# pattern_nodes = picklin("../results/ecg/","ecg_pattern_nodes")
 
 def make_timing_neuron(name=None):
     step = int(141/3)#35
@@ -249,10 +272,10 @@ def run_classification(
 
 
 params = {
-    "train"      : 1600,
-    "runs"       : 1,
-    "eta"        : 0.005,
-    "max_offset" : 0.1675,
+    "train"      : 1,
+    "runs"       : 1000,
+    "eta"        : 0.05,
+    "max_offset" : 0.4, #0.1675,
     "updater"    : 'symmetric',
     "duration"   : 140,
     "patterns"   : 3,
@@ -261,37 +284,38 @@ params = {
 }
 
 
-# pattern_nodes,chunks = make_pattern_nodes(params["patterns"],params["classes"],ff=1.25)
+pattern_nodes,chunks = make_pattern_nodes(params["patterns"],params["classes"],ff=1.25)
 
-# learn_chunks(pattern_nodes,chunks,**params)
-# plot_trajectories(pattern_nodes)
+learn_chunks(pattern_nodes,chunks,**params)
+plot_trajectories(pattern_nodes)
 
 # picklit(pattern_nodes,"../results/ecg/","ecg_pattern_nodes_disyn")
 
 
-pattern_nodes = picklin("../results/ecg/","ecg_pattern_nodes_disyn")
+# pattern_nodes = picklin("../results/ecg/","ecg_pattern_nodes_disyn")
 
-timing_neuron_reg = make_timing_neuron(name="reg")
-timing_neuron_anom = make_timing_neuron(name="anom")
+# timing_neuron_reg = make_timing_neuron(name="reg")
+# timing_neuron_anom = make_timing_neuron(name="anom")
 
-nodes = pattern_nodes +[timing_neuron_anom]+[timing_neuron_reg]
-test  = 400
-print(f"Testing on {test} unseen samples.")
+# nodes = pattern_nodes +[timing_neuron_anom]+[timing_neuron_reg]
+# test  = 20
+# print(f"Testing on {test} unseen samples.")
 
-reg_hits  = 0
-anom_hits = 0
+# reg_hits  = 0
+# anom_hits = 0
 
-for tst in range(params["train"],params["train"]+test):
-    outputs_reg,first_spks_reg   = run_classification(nodes,reg_spikes[tst],learn=False,duration=200)
-    outputs_anom,first_spks_anom = run_classification(nodes,anom_spikes[tst],learn=False,duration=200,sig="anom")
-    print(tst,outputs_reg,outputs_anom," -- ",first_spks_reg,first_spks_anom,end='\r')
+# # for tst in range(params["train"],params["train"]+test):
+# for tst in range(test):
+#     outputs_reg,first_spks_reg   = run_classification(nodes,reg_spikes[tst],learn=False,duration=200)
+#     outputs_anom,first_spks_anom = run_classification(nodes,anom_spikes[tst],learn=False,duration=200,sig="anom")
+#     print(tst,outputs_reg,outputs_anom," -- ",first_spks_reg,first_spks_anom,end='\r')
 
-    if sum(outputs_reg[:3]) < sum(outputs_reg[3:]): reg_hits +=1
-    if sum(outputs_anom[:3]) > sum(outputs_anom[3:]): anom_hits +=1
+#     if sum(outputs_reg[:3]) < sum(outputs_reg[3:6]): reg_hits +=1
+#     if sum(outputs_anom[:3]) > sum(outputs_anom[3:6]): anom_hits +=1
 
-print(f"Total pattern-comparison accuracy = {rounded_percentage(reg_hits+anom_hits,test*2)}")
-print(f"Reg pattern-comparison accuracy = {rounded_percentage(reg_hits,test)}")
-print(f"Anom pattern-comparison accuracy = {rounded_percentage(anom_hits,test)}")
+# print(f"\n\nTotal pattern-comparison accuracy = {rounded_percentage(reg_hits+anom_hits,test*2)}")
+# print(f"Reg pattern-comparison accuracy = {rounded_percentage(reg_hits,test)}")
+# print(f"Anom pattern-comparison accuracy = {rounded_percentage(anom_hits,test)}")
 
 
-print_attrs(nodes,["name"])
+# print_attrs(nodes,["name"])
