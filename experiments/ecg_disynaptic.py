@@ -104,9 +104,15 @@ def learn_chunks(
     collect_chunks = [[[] for _ in range(bins)] for _ in range(patterns)]
     collect_chunks_anoms = [[[] for _ in range(bins)] for _ in range(patterns)]
 
+    acc_reg = [] 
+    acc_ano = [] 
+
     for run in range(runs):   
         eta_decay = eta/(run+1)
-        success = 0 
+
+        hit_reg = np.zeros((3,))
+        hit_ano = np.zeros((3,))
+
         for trn in range(train):
             # raster_plot_rows(reg_spikes[trn])
 
@@ -134,6 +140,8 @@ def learn_chunks(
                     duration=window,
                     # plotting=True
                     )
+                
+                if np.argmax(targets) == np.argmax(outputs): hit_reg[i] +=1
 
 
                 ### Anomolous ECG Signals ###
@@ -153,12 +161,18 @@ def learn_chunks(
                     updater=updater,
                     duration=window
                     )
+                
+                if np.argmax(targets) == np.argmax(outputs): hit_ano[i] +=1
 
                 print(f"Run {run}  --  sample {trn}",end="\r")
+        acc_ano.append(hit_ano/train)
+        acc_reg.append(hit_reg/train)
+    
+    plt.plot(acc_ano,label=[f"ano learning, chunk {i}" for i in range(3)])
+    plt.plot(acc_reg,label=[f"reg learning, chunk {i}" for i in range(3)])
+    plt.legend()
+    plt.show()
     return pattern_nodes
-
-
-pattern_nodes = picklin("../results/ecg/","ecg_pattern_nodes")
 
 def make_timing_neuron(name=None):
     step = int(141/3)#35
@@ -250,8 +264,8 @@ def run_classification(
 
 params = {
     "train"      : 1600,
-    "runs"       : 1,
-    "eta"        : 0.005,
+    "runs"       : 10,
+    "eta"        : 0.0005,
     "max_offset" : 0.1675,
     "updater"    : 'symmetric',
     "duration"   : 140,
@@ -261,37 +275,53 @@ params = {
 }
 
 
-# pattern_nodes,chunks = make_pattern_nodes(params["patterns"],params["classes"],ff=1.25)
+pattern_nodes,chunks = make_pattern_nodes(params["patterns"],params["classes"],ff=1.25)
 
-# learn_chunks(pattern_nodes,chunks,**params)
-# plot_trajectories(pattern_nodes)
+learn_chunks(pattern_nodes,chunks,**params)
+plot_trajectories(pattern_nodes)
 
 # picklit(pattern_nodes,"../results/ecg/","ecg_pattern_nodes_disyn")
 
 
-pattern_nodes = picklin("../results/ecg/","ecg_pattern_nodes_disyn")
+# pattern_nodes = picklin("../results/ecg/","ecg_pattern_nodes_disyn")
 
-timing_neuron_reg = make_timing_neuron(name="reg")
-timing_neuron_anom = make_timing_neuron(name="anom")
+# timing_neuron_reg = make_timing_neuron(name="reg")
+# timing_neuron_anom = make_timing_neuron(name="anom")
 
-nodes = pattern_nodes +[timing_neuron_anom]+[timing_neuron_reg]
-test  = 400
-print(f"Testing on {test} unseen samples.")
+# connect_pattern_layer_to_timing_neurons(
+#         pattern_nodes,
+#         timing_neuron_reg,
+#         timing_neuron_anom
+#         )
 
-reg_hits  = 0
-anom_hits = 0
+# nodes = pattern_nodes +[timing_neuron_anom]+[timing_neuron_reg]
+# test  = 400
+# print(f"Testing on {test} unseen samples.")
 
-for tst in range(params["train"],params["train"]+test):
-    outputs_reg,first_spks_reg   = run_classification(nodes,reg_spikes[tst],learn=False,duration=200)
-    outputs_anom,first_spks_anom = run_classification(nodes,anom_spikes[tst],learn=False,duration=200,sig="anom")
-    print(tst,outputs_reg,outputs_anom," -- ",first_spks_reg,first_spks_anom,end='\r')
+# reg_hits  = 0
+# anom_hits = 0
+# reg_timing_hits = 0
+# anom_timing_hits = 0
 
-    if sum(outputs_reg[:3]) < sum(outputs_reg[3:]): reg_hits +=1
-    if sum(outputs_anom[:3]) > sum(outputs_anom[3:]): anom_hits +=1
-
-print(f"Total pattern-comparison accuracy = {rounded_percentage(reg_hits+anom_hits,test*2)}")
-print(f"Reg pattern-comparison accuracy = {rounded_percentage(reg_hits,test)}")
-print(f"Anom pattern-comparison accuracy = {rounded_percentage(anom_hits,test)}")
+# for tst in range(params["train"],params["train"]+test):
+#     outputs_reg,first_spks_reg   = run_classification(nodes,reg_spikes[tst],learn=False,duration=200)
 
 
-print_attrs(nodes,["name"])
+#     outputs_anom,first_spks_anom = run_classification(nodes,anom_spikes[tst],learn=False,duration=200,sig="anom")
+#     print(tst,outputs_reg,outputs_anom," -- ",first_spks_reg,first_spks_anom,end='\r')
+
+#     if first_spks_reg[6] > first_spks_reg[7]: reg_timing_hits +=1
+#     if first_spks_anom[6] < first_spks_anom[7]: anom_timing_hits +=1
+
+#     if sum(outputs_reg[:3]) < sum(outputs_reg[3:6]): reg_hits +=1
+#     if sum(outputs_anom[:3]) > sum(outputs_anom[3:6]): anom_hits +=1
+
+# print(f"\nTotal pattern-comparison accuracy = {rounded_percentage(reg_hits+anom_hits,test*2)}")
+# print(f"Reg pattern-comparison accuracy = {rounded_percentage(reg_hits,test)}")
+# print(f"Anom pattern-comparison accuracy = {rounded_percentage(anom_hits,test)}\n")
+
+# print(f"Total timing-comparison accuracy = {rounded_percentage(reg_timing_hits+anom_timing_hits,test*2)}")
+# print(f"Reg timing-comparison accuracy = {rounded_percentage(reg_timing_hits,test)}")
+# print(f"Anom timing-comparison accuracy = {rounded_percentage(anom_timing_hits,test)}")
+
+# print_attrs(nodes,["name"])

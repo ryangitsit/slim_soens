@@ -17,6 +17,7 @@ def plot_training(path,train=True,test=False,val=False):
     if train==True: 
         accs = np.array(picklin(path,'learning_accs'))*100
         plt.plot(accs,label="Training Performance")
+        print(f"Maximum training performance = {np.max(accs)} at epoch {np.argmax(accs)}")
     if test==True: 
         test_accs = np.array(picklin(path,'test_accs'))*100
         plt.axhline(test_accs[-1],linestyle='--',color='r',label="Test Performance")
@@ -39,6 +40,8 @@ exp = 'valtest_500'
 
 dr = 'mnist_study'
 exp = 'cifar_small_2'
+
+exp = "mid_mnist_rotate"
 
 path = os.path.join('../results',dr,exp)
 
