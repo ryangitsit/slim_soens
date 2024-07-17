@@ -110,6 +110,7 @@ class Soma(Dendrite):
         self.spikes     = []
         self.abs_ref    = 10
         self.__dict__.update(params)
+        self.name       = f"{neuron_name}_dend_soma"
         
     def __del__(self):
         """
