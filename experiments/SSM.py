@@ -249,9 +249,18 @@ plt.title(labels[0])
 plt.plot(data[0])
 plt.show()
 
+
+#%%
+from keras.datasets import mnist
+(X_train, y_train), (X_test, y_test) = mnist.load_data()
+
+X_train = X_train[(y_train==0 )| (y_train ==1)]
+y_train = y_train[(y_train==0 )| (y_train ==1)]
+
 #%%
 
 weights = [[B]]
+arbor_params = [[[{'tau':5} for _ in range(len(B)) ]]]
 
 ssm_neuron = Neuron(
     name='ssm_neuron',
@@ -279,12 +288,6 @@ train_bound = int(train_split*samples)
 plot=True
 
 
-#%%
-from keras.datasets import mnist
-(X_train, y_train), (X_test, y_test) = mnist.load_data()
-
-X_train = X_train[(y_train==0 )| (y_train ==1)]
-y_train = y_train[(y_train==0 )| (y_train ==1)]
 #%%
 
 for run in range(runs):
@@ -314,7 +317,7 @@ for run in range(runs):
             nodes          = [ssm_neuron],
             duration       = T,
         )
-
+        # plot_nodes([ssm_neuron])
         # if run==1 and label==0 and plot==True and sample>4000:
         #     plot_nodes([ssm_neuron],dendrites=True)
         #     print(f"{label} -> {len(ssm_neuron.dend_soma.spikes)}")

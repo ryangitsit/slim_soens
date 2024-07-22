@@ -257,7 +257,7 @@ def plot_by_layer(node,layers,flux=False):
     plt.title(node.name)
     plt.show()
 
-def plot_representations(nodes):
+def plot_representations(nodes,shape=(28,28)):
 
     fig,ax = plt.subplots(len(nodes),2,figsize=(8,4*len(nodes)), sharex=True,sharey=True)
     for n,node in enumerate(nodes):
@@ -271,8 +271,8 @@ def plot_representations(nodes):
             else:
                 learned_offsets_negative.append(dend.flux_offset)
 
-        ax[n][0].imshow(np.array(learned_offsets_positive).reshape(28,28),cmap="Greens")
-        ax[n][1].imshow(np.array(learned_offsets_negative).reshape(28,28),cmap="Reds")
+        ax[n][0].imshow(np.array(learned_offsets_positive).reshape(shape),cmap="Greens")
+        ax[n][1].imshow(np.array(learned_offsets_negative).reshape(shape),cmap="Reds")
         ax[n][0].set_xticks([])
         ax[n][1].set_yticks([])
 
