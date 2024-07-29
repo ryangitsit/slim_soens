@@ -17,6 +17,9 @@ def update_offset(dend,update,offmax,traj):
         dend.flux_offset = np.max([dend.flux_offset, -1*offmax])
     if traj==True: dend.update_traj.append(dend.flux_offset)
 
+def update_connection_strength(dend,update,offmax,traj):
+    pass
+
 def symmetric_udpater(error,eta,dend,offmax,layers,traj):
     """
     Try this for synaptic layer only

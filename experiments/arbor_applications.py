@@ -1,6 +1,7 @@
 #%%
 import numpy as np
 import matplotlib.pyplot as plt
+import os.path
 import time
 import sys
 from keras.datasets import mnist, cifar10
@@ -59,7 +60,7 @@ def run_net(nodes,duration=500):
     # plot_nodes(nodes)
 
 
-def make_dataset(digits,samples,start=0,data_type='mnist'):
+def make_dataset(digits,samples,start=0,data_type='mnist',testset=False):
 
     '''
     Prepares dataset in format suitable for remaining script
@@ -72,7 +73,10 @@ def make_dataset(digits,samples,start=0,data_type='mnist'):
     if data_type=='mnist':
         (X_train, y_train), (X_test, y_test) = mnist.load_data()
         shape = 784
-        data = [X_train[(y_train == i)][start:start+samples] for i in range(digits)]
+        if testset == False:
+            data = [X_train[(y_train == i)][start:start+samples] for i in range(digits)]
+        elif testset == True:
+            data = [X_test[(y_test == i)][start:start+samples] for i in range(digits)]
 
     elif data_type=='cifar':
         (X_train, y_train), (X_test, y_test) = cifar10.load_data()
@@ -167,18 +171,31 @@ def learn_readout_mapping(
         exp_name='test',
         learn=True,
         validate=False,
-        save_mod=100
+        save_mod=1
         ):
     epoch_accs = []
     for run in range(rerun_start, rerun_start+runs):
         success = 0
         seen = 0
-        for i in range(digits):
-            digit=i
-            # for j in range(samples):
 
-            for j in range(10):
-                j = j + (run%100)*10
+        ### simple
+        # for i in range(digits):
+        #     digit=i
+        #     for j in range(samples):
+
+        ### rotate
+            # for j in range(10):
+            #     j = j + (run%100)*10
+
+        ### shuffle
+        for sample in range(samples):
+            j = sample
+            np.random.seed(None)
+            shuffled = np.arange(0,digits,1)
+            np.random.shuffle(shuffled)
+            for digit in range(digits):
+                digit = shuffled[digit]
+                i = digit
 
 
                 seen+=1
@@ -211,9 +228,20 @@ def learn_readout_mapping(
                 running_acc=np.round(success/seen,2)
                 print(run,outputs,targets,hit,running_acc,i,j)
                 clear_net(readout_net)
+
         epoch_accs.append(running_acc)
-        picklit(epoch_accs,f"../results/mnist_study/{exp_name}/",f"learning_accs")
+        
+        if os.path.isfile(f"../results/mnist_study/{exp_name}/learning_accs.pickle"):
+            # print("here")
+            accs = picklin(f"../results/mnist_study/{exp_name}/",f"learning_accs")
+            accs.append(running_acc)
+            picklit(accs,f"../results/mnist_study/{exp_name}/",f"learning_accs")
+        else:
+            # print("there")
+            picklit(epoch_accs,f"../results/mnist_study/{exp_name}/",f"learning_accs")
         print(f"Epoch {run} accuracy = {running_acc}\n")
+
+
         if learn==True:
             if run%save_mod==0: 
                 picklit(
@@ -263,7 +291,10 @@ def get_reservoir_spikes(digits,samples,start,N,p,exp_name,make=False,save=False
     return dataset, res_spikes, rnn_nodes
     
     
-def train(digits,samples,res_spikes,updater,eta,max_offset,runs,exp_name,data_type='mnist',save=True,validate=False):
+def train(
+        digits,samples,res_spikes,updater,eta,max_offset,runs,exp_name,
+        data_type='mnist',save=True,validate=False,resume=False,rerun_start=0
+        ):
 
     if data_type=='mnist': 
         shape=784
@@ -271,11 +302,16 @@ def train(digits,samples,res_spikes,updater,eta,max_offset,runs,exp_name,data_ty
         shape=32*32*3
 
     print("Training")
-    resume=False
+    
     if resume==True:
-        rerun_start=990
-        readout_nodes = picklin(f"../results/mnist_study/{exp_name}/",f"readouts_symmetric_{digits}_{samples}_0_at_{rerun_start}")
-        rnn_nodes = picklin(f"../results/mnist_study/{exp_name}/",f"res_nodes_{shape}_1_{digits}_{samples}_0")
+        # rerun_start=990
+        readout_nodes = picklin(
+            f"../results/mnist_study/{exp_name}/",f"readouts_symmetric_{digits}_{samples}_0_at_{rerun_start}"
+            )
+        rnn_nodes = picklin(
+            f"../results/mnist_study/{exp_name}/",f"res_nodes_{shape}_1_{digits}_{samples}_0"
+            )
+        rerun_start+=1
     else:
         rerun_start = 0
         readout_nodes = make_disynaptic_readout_nodes(digits,shape=shape)
@@ -303,9 +339,9 @@ def test(digits,samples,start,readout_nodes,rnn_nodes=None,data_type='mnist',sav
     elif data_type=='cifar':
         shape=32*32*3
 
-    test_start = start+digits*samples
-    test_samples = int(samples*.2)
-    dataset = make_dataset(digits,test_samples,test_start)
+    test_start = 0 #start+digits*samples
+    test_samples = int(samples*.15)
+    dataset = make_dataset(digits,test_samples,test_start,testset=True)
 
     test_res_spikes,rnn_nodes = gen_rnn_spikes(
         N,p,digits,test_samples,dataset,test_start,save,exp_name,rnn_nodes=rnn_nodes,data_type=data_type
@@ -339,18 +375,38 @@ def test(digits,samples,start,readout_nodes,rnn_nodes=None,data_type='mnist',sav
     
 np.random.seed(10)
 
-# exp_name = "the_big_one"
+# exp_name = "the_big_one_shuffle"
 # data_type='mnist'
 # digits = 10
 # samples = 5420
 # start=0
-# runs = 10
+# runs = 50
+# updater = 'symmetric'
+# eta = 0.0005
+# max_offset = 0.4 #0.1675
+
+# exp_name = "the_big_cifar_shuffle"
+# data_type='cifar'
+# digits = 10
+# samples = 5000
+# start=0
+# runs = 50
 # updater = 'symmetric'
 # eta = 0.0005
 # max_offset = 0.4 #0.1675
 
 
-exp_name = "mid_mnist_rotate"
+# exp_name = "mid_mnist_rotate"
+# data_type='mnist'
+# digits = 10
+# samples = 1000
+# start=0
+# runs = 1001
+# updater = 'symmetric'
+# eta = 0.0005
+# max_offset = 0.4 #0.1675
+
+exp_name = "mid_mnist_shuffle_reinit"
 data_type='mnist'
 digits = 10
 samples = 1000
@@ -365,9 +421,9 @@ max_offset = 0.4 #0.1675
 # digits = 3
 # samples = 10
 # start=0
-# runs = 1
+# runs = 100
 # updater = 'symmetric'
-# eta = 0.005
+# eta = 0.0001
 # max_offset = 0.4 #0.1675
 
 
@@ -413,20 +469,20 @@ p = 1
 
 def run_experiment(data_type,digits,samples,start,runs,N,p,updater,eta,max_offset,exp_name):
 
-    dataset, res_spikes, rnn_nodes = get_reservoir_spikes(
-        digits,samples,start,N,p,exp_name,make=False,save=False,data_type=data_type
-        )
-    
     # dataset, res_spikes, rnn_nodes = get_reservoir_spikes(
     #     digits,samples,start,N,p,exp_name,make=True,save=True,data_type=data_type
     #     )
     
-    # plot_res_spikes(digits,samples,res_spikes)
-    readout_nodes, learning_accs = train(
-        digits,samples,res_spikes,updater,eta,max_offset,runs,exp_name,data_type=data_type
+    dataset, res_spikes, rnn_nodes = get_reservoir_spikes(
+        digits,samples,start,N,p,exp_name,make=False,save=False,data_type=data_type
         )
     
-    # readout_nodes = picklin(f"../results/mnist_study/{exp_name}/",f"readouts_symmetric_{digits}_{samples}_0_at_{rerun_start}")
+    # plot_res_spikes(digits,samples,res_spikes)
+    readout_nodes, learning_accs = train(
+        digits,samples,res_spikes,updater,eta,max_offset,runs,exp_name,data_type=data_type#,resume=True,rerun_start=0
+        )
+    
+    # readout_nodes = picklin(f"../results/mnist_study/{exp_name}/",f"readouts_symmetric_{digits}_{samples}_0_at_0")
     # rnn_nodes = picklin(f"../results/mnist_study/{exp_name}/",f"res_nodes_{shape}_1_{digits}_{samples}_0")
     test(
         digits,samples,start,readout_nodes,rnn_nodes=rnn_nodes,data_type=data_type
