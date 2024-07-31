@@ -82,11 +82,11 @@ for i in range(d):
         x[i].outgoing.append([x[j],A[i][j]])
         x[j].incoming.append([x[i],A[i][j]])
 
-T = 100
+T = 500
 
 
 mult_trajs = [[] for _ in range(d)]
-runs = 1000
+runs = 10
 eta = 0.01
 for run in range(runs):
     for t in range(T):
@@ -143,6 +143,9 @@ plt.show()
 
 
 #%%
+
+u = np.loadtxt('../data/mackey.txt')
+
 weights = [[B]]
 
 arbor_params = [[[{'tau':5} for _ in range(len(B)) ]]]
@@ -183,20 +186,41 @@ runs = 10
 #         error = u[t+1] - ssm_neuron.dend_soma.flux[-1]
 #         errors.append(error)
 #         for i,dend in enumerate(x):
-#             eta = 0.0001/(1+.5*run)
+
+#             eta = 0.001/(1+.5*run)
 
 #             update = error*eta*np.mean(dend.flux)*np.sign(ssm_neuron.dend_soma.incoming[i+1][1])
 #             # update = np.mean(dend.flux)*error*eta
 #             ssm_neuron.dend_soma.incoming[i+1][1] += update
 #             mult_trajs[i].append(ssm_neuron.dend_soma.incoming[i+1][1])
 
-        # clear_net(net)
+#         clear_net(net)
 
 # plt.plot(errors)
 # plt.show()
 
+post_train_split = 300
+input_signal = u
+
+for t in range(T):
+    for i,dend in enumerate(x):
+        x[i].flux_offset = input_signal[t:t+2]*B[i]
+
+    net = Network(
+        run_simulation = True,
+        nodes          = [ssm_neuron],
+        duration       = 2,
+    )
+
+    if t > post_train_split:
+        y_prev = ssm_neuron.dend_soma.flux[-1]
+
+        input_signal[t+1:t+3] = np.ones(2)*y_prev
+        print(input_signal[t+1:t+3])
+
+
 for i,dend in enumerate(x):
-    x[i].flux_offset = u[:T]*B[i]
+    x[i].flux_offset = np.concatenate([(u[:T]*B[i])[:post_train_split],np.zeros(T-post_train_split)])
 
 net = Network(
     run_simulation = True,
