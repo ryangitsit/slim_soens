@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import timeit
 import time
 import sys
+sys.path.append('../slim_soens/slim_soens')
 sys.path.append('../')
 
 from neuron import Neuron
