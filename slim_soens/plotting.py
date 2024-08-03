@@ -125,7 +125,7 @@ def plot_nodes(
         if len(node.dend_soma.spikes) > 0:
             plt.scatter(
                 np.array(node.dend_soma.spikes)-1,
-                np.ones(len(node.dend_soma.spikes))*node.s_th,
+                np.ones(len(node.dend_soma.spikes))*node.threshold,
                 marker='x',color='k',zorder=100,s=50)
             
 

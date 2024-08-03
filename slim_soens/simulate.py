@@ -77,7 +77,7 @@ def s_of_phi(phi,s,A=1,B=.466,ib=1.8):
     Docstring
     """
     phi_th = 0.1675 #ind_phi_th(s,A,B) #0.1675
-    r_fq = A*(phi-phi_th)*(B*ib-s)
+    r_fq = A*(phi-phi_th)+(B*ib-s)
     if phi<phi_th: r_fq = 0
     return r_fq
 
@@ -149,7 +149,9 @@ def run_slim_soens(net):
         for node in net.nodes:
             for dend in node.dendrite_list[1:]:
                 update_dendrite(dend,t,net.dt,d_tau)
-            update_soma(node.dend_soma,node.dend_ref,t,net.dt,d_tau,time_steps)
+            update_soma(
+                node.dend_soma,node.dend_ref,t,net.dt,d_tau,time_steps
+                )
 
     t = time_steps-1
     for node in net.nodes:
