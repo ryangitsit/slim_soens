@@ -30,7 +30,7 @@ def step(t,flux,signal,dalbe,debe,inpt,inpt_adj,adj):
     # flux = flux + inpt[:,t]*inpt_adj
 
     r_fq = transfer_function(flux,signal)
-    # r_fq = r_fq.at[r_fq<flux_threshold].set(0) 
+    r_fq = r_fq.at[r_fq<flux_threshold].set(0) 
 
     signal = signal * dalbe + debe * r_fq
 
@@ -60,8 +60,8 @@ def run_vectorized_simulation(
 # print(xla_bridge.get_backend().platform)
 
 
-N = 20000
-T = 100
+N = 785*10
+T = 60000
 
 
 adj         = jnp.array((np.multiply(np.random.randint(2, size=(N,N)),np.random.rand(N,N))).astype(np.float32))

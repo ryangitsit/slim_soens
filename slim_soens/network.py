@@ -14,6 +14,7 @@ class Network():
     def __init__(self, **params):
         self.dt = 1
         self.duration = 100
+        self.epochs = 0
         self.run_simulation = None
         self.multithreading = None
         self.__dict__.update(params)

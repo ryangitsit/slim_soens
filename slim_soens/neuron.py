@@ -44,7 +44,10 @@ class Neuron():
 
         self.add_edges()
 
-        self.add_synaptic_layer()
+        if self.no_synapses != True:
+            self.add_synaptic_layer()
+        else:
+            self.synapse_list = []
 
         self.get_dimensions()
 

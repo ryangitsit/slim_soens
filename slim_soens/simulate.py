@@ -77,7 +77,7 @@ def s_of_phi(phi,s,A=1,B=.466,ib=1.8):
     Docstring
     """
     phi_th = 0.1675 #ind_phi_th(s,A,B) #0.1675
-    r_fq = A*(phi-phi_th)+(B*ib-s)
+    r_fq = A*(phi-phi_th)*(B*ib-s)
     if phi<phi_th: r_fq = 0
     return r_fq
 
@@ -87,10 +87,10 @@ def update_flux(dend,t):
     """
     recieved_flux = 0
     for in_obj,w in dend.incoming:
-        if type(in_obj) == components.Synapse:
-            recieved_flux+=in_obj.flux[t]*w
-        else:
-            recieved_flux+=in_obj.signal[t]*w
+        # if type(in_obj) == components.Synapse:
+        #     recieved_flux+=in_obj.flux[t]*w
+        # else:
+        recieved_flux+=in_obj.signal[t]*w
     dend.flux[t] += recieved_flux
 
 def update_signal(dend,t,dt,d_tau):
