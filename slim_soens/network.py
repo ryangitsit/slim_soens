@@ -17,14 +17,22 @@ class Network():
         self.epochs = 0
         self.run_simulation = None
         self.multithreading = None
+        self.backend = "default"
         self.__dict__.update(params)
         self.jjparams = get_jj_params()
+
         if self.run_simulation is True:
             self.run_network_simulation(duration=self.duration)
 
+
     def run_network_simulation(self,duration=100):
         self.duration=duration
-        run_slim_soens(self)
+        if self.backend=="default":
+            run_slim_soens(self)
+        elif self.backend == "steady_state":
+            from steady_state_backend import run_steady_state
+            run_steady_state(self)
+
         
     def get_output_spikes(self):
         spike_times   = []
@@ -38,7 +46,8 @@ class Network():
         return self.output_spikes
 
     def run_network_simulation_multithread(self,duration=100):
-        run_slim_soens_multi(self)
+        if self.backend == "default":
+            run_slim_soens_multi(self)
 
     def plot_structure(self):
         pass
