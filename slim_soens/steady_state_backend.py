@@ -38,5 +38,3 @@ def run_steady_state(net):
         # print(len(leaf_dends))
         for l,leaf in enumerate(leaf_dends):
             recursive_flux_update(leaf)
-    
-

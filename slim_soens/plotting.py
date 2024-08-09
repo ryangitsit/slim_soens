@@ -284,26 +284,60 @@ def plot_by_layer(node,layers,flux=False):
     plt.title(node.name)
     plt.show()
 
-def plot_representations(nodes,shape=(28,28)):
+def plot_representations(nodes,shape=(28,28),disynaptic=False,activity=False):
+    reps = []
+    if disynaptic==True: 
+        cols = 2
+        fig,ax = plt.subplots(len(nodes),cols,figsize=(8,4*len(nodes)), sharex=True,sharey=True)
+        for n,node in enumerate(nodes):
+            
+            learned_offsets_positive = []
+            learned_offsets_negative = []
 
-    fig,ax = plt.subplots(len(nodes),2,figsize=(8,4*len(nodes)), sharex=True,sharey=True)
-    for n,node in enumerate(nodes):
-        
-        learned_offsets_positive = []
-        learned_offsets_negative = []
+            for i,dend in enumerate(node.dendrite_list[2:]):
+                if activity==True:
+                    print("here")
+                    val = dend.signal[-1]*dend.outgoing[0][1]
+                else:
+                    val = dend.flux_offset
 
-        for i,dend in enumerate(node.dendrite_list[2:]):
-            if dend.outgoing[0][1] >= 0:
-                learned_offsets_positive.append(dend.flux_offset)
-            else:
-                learned_offsets_negative.append(dend.flux_offset)
+                if dend.outgoing[0][1] >= 0:
+                    learned_offsets_positive.append(val)
+                else:
+                    learned_offsets_negative.append(val)
 
-        ax[n][0].imshow(np.array(learned_offsets_positive).reshape(shape),cmap="Greens")
-        ax[n][1].imshow(np.array(learned_offsets_negative).reshape(shape),cmap="Reds")
-        ax[n][0].set_xticks([])
-        ax[n][1].set_yticks([])
+            ax[n][0].imshow(np.array(learned_offsets_positive).reshape(shape),cmap="Greens")
+            ax[n][1].imshow(np.array(learned_offsets_negative).reshape(shape),cmap="Reds")
+            ax[n][0].set_xticks([])
+            ax[n][1].set_yticks([])
 
-    plt.show()
+        plt.show()
+    else:
+        cols = 1
+        fig,ax = plt.subplots(len(nodes),cols,figsize=(8,4*len(nodes)), sharex=True,sharey=True)
+        for n,node in enumerate(nodes):
+            
+            learned_offsets_positive = []
+            learned_offsets_negative = []
+
+            for i,dend in enumerate(node.dendrite_list[2:]):
+                if activity==True:
+                    val = dend.signal*dend.outgoing[0][1]
+                else:
+                    val = dend.flux_offset
+                if dend.outgoing[0][1] >= 0:
+                    learned_offsets_positive.append(val)
+                else:
+                    learned_offsets_negative.append(val)
+
+            ax[n].imshow(np.array(learned_offsets_positive).reshape(shape),cmap="Greens")
+            reps.append(np.array(learned_offsets_positive))
+            ax[n].set_xticks([])
+            ax[n].set_yticks([])
+
+        plt.show()
+
+    return reps
 
 def plot_res_spikes(digits,samples,res_spikes):
     fig,ax = plt.subplots(digits,samples,figsize=(18,12), sharex=True,sharey=True)
