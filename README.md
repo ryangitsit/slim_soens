@@ -14,14 +14,14 @@ Enjoy!
    - `git clone https://github.com/ryangitsit/sim_soens.git` 
  - Be sure to have the necessary python packages with the following commands (setup for python v3.10 -- may have to manually add packages otherwise)
    - `pip install -r requirements.txt` 
- - Open `simple_tutorial.ipynb` for a simulator walkthrough 
+ - Open `tutorials/overview.ipynb` for a simulator walkthrough 
    - How to use jupyter notebooks: https://www.dataquest.io/blog/jupyter-notebook-tutorial/
    - Or just use the jupyter extension in the vscode IDE
  - Read the docs!
    - https://sim-soens.readthedocs.io/en/latest/
 
 
-## System Flow
+<!-- ## System Flow
 ![plot](./img/flo.png)
 
 ## Features
@@ -42,5 +42,5 @@ Enjoy!
    - Neuron morphologies
    - Dendrite behavior
    - Network structure and activity
-![plot](./img/viz_example.png)
+![plot](./img/viz_example.png) -->
 # *Enjoy!*
