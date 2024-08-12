@@ -28,6 +28,36 @@ def weights_to_adjacency(weights):
 
     return adj_mat
 
+def adjacency_to_weights(adj_mat):
+    """
+    Docstring
+    """
+    # weights = [[[]for _ in range(len(adj_mat))] for _ in range(len(adj_mat))]
+
+    # for i,row in enumerate(adj_mat[2:]):
+    #     for j,val in enumerate(row):
+    #         if val!=0:
+    #             weights[j][i].append(val)
+
+    w = []
+    for col_idx in range(len(adj_mat)):
+        fan_ins = list(adj_mat[:,col_idx][adj_mat[:,col_idx]>0])
+        if fan_ins != []:
+            w.append(fan_ins)
+
+
+    # w = []
+    # for i,layer in enumerate(weights):
+    #     for j,group in enumerate(layer):
+    #         if group != []: w.append(layer)
+
+    # w2 = []
+    # for i,layer in enumerate(w):
+    #     w2.append(np.concatenate(layer))
+
+    return w
+
+
 
 def get_name(obj):
     """

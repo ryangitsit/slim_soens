@@ -18,6 +18,7 @@ class Neuron():
         self.arbor_params = None
 
         self.synaptic_strength = 1
+        self.no_synapses       = False
 
         self.__dict__.update(params)
 
@@ -38,13 +39,16 @@ class Neuron():
 
         self.dendrite_list += [self.dend_soma,self.dend_ref]
         
-        self.make_dendrites()
-
-        self.adjacency = weights_to_adjacency(self.weights)
+        if hasattr(self,"arbor_adjacency"):
+            self.make_dendrites_from_adj()
+        else: 
+            self.make_dendrites()
+            self.arbor_adjacency = weights_to_adjacency(self.weights)
 
         self.add_edges()
 
         if self.no_synapses != True:
+            # print("Adding synaptic layer...")
             self.add_synaptic_layer()
         else:
             self.synapse_list = []
@@ -76,6 +80,14 @@ class Neuron():
             for d,dend in enumerate(group)
             ]
         
+    def make_dendrites_from_adj(self):
+        self.dendrite_list += [
+            Dendrite(
+                name=f"dendrite_{i}",
+                neuron=self
+                ) for i in range(len(self.arbor_adjacency)-2)]
+
+        
     def make_dend_dict(self):
         """
         Docstring
@@ -87,13 +99,13 @@ class Neuron():
         total_dendrites = len(self.dendrite_list)
         for i in range(total_dendrites):
             for j in range(total_dendrites):
-                if self.adjacency[i][j] != 0:
+                if self.arbor_adjacency[i][j] != 0:
                     
                     self.dendrite_list[i].outgoing.append(
-                        [self.dendrite_list[j],self.adjacency[i][j]]
+                        [self.dendrite_list[j],self.arbor_adjacency[i][j]]
                         )
                     self.dendrite_list[j].incoming.append(
-                        [self.dendrite_list[i],self.adjacency[i][j]]
+                        [self.dendrite_list[i],self.arbor_adjacency[i][j]]
                         )   
 
     def add_synapse(self,dend,cs):
@@ -281,8 +293,7 @@ class Neuron():
 
     def plot_structure(self):
         from plotting import graph_adjacency
-        print(self.weights,self.get_dimensions())
-        graph_adjacency(self.adjacency,self.get_dimensions())
+        graph_adjacency(self.arbor_adjacency,self.get_dimensions())
 
 
 

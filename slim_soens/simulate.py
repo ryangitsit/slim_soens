@@ -87,10 +87,10 @@ def update_flux(dend,t):
     """
     recieved_flux = 0
     for in_obj,w in dend.incoming:
-        # if type(in_obj) == components.Synapse:
-        #     recieved_flux+=in_obj.flux[t]*w
-        # else:
-        recieved_flux+=in_obj.signal[t]*w
+        if type(in_obj) == components.Synapse:
+            recieved_flux+=in_obj.flux[t]*w
+        else:
+            recieved_flux+=in_obj.signal[t]*w
     dend.flux[t] += recieved_flux
 
 def update_signal(dend,t,dt,d_tau):

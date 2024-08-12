@@ -125,20 +125,15 @@ def plot_nodes(
         if len(node.dend_soma.spikes) > 0:
             plt.scatter(
                 np.array(node.dend_soma.spikes)-1,
-                np.ones(len(node.dend_soma.spikes))*node.threshold,
+                np.ones(len(node.dend_soma.spikes))*node.dend_soma.threshold,
                 marker='x',color='k',zorder=100,s=50)
-            
-
-
-
-
-
-
+        
         plt.title(node.name, fontsize=16)
         plt.subplots_adjust(bottom=.125)
         
         plt.xlabel('Time (ns)', fontsize=14)
         plt.ylabel('Unitless Signal and Flux',fontsize=14)
+        plt.legend()
 
     plt.show()
 
