@@ -72,17 +72,23 @@ class Network():
 
 
 class HopfieldNetwork(Network):
+    
     def __init__(self, **params):
         super().__init__()
         self.N                    = 10
         self.connection_strengths = 1
 
         self.__dict__.update(params)
-        self.network_adjacency = np.zeros((self.N,self.N))
         self.make_net()
         
 
     def make_net(self):
+
+        if hasattr(self,'network_adjacency') == False:
+            self.network_adjacency = np.ones((self.N,self.N))*self.connection_strengths
+        else:
+            self.N = len(self.network_adjacency)
+
         self.nodes = []
         for i in range(self.N):
             self.nodes.append(Neuron(
@@ -91,6 +97,7 @@ class HopfieldNetwork(Network):
 
         for i in range(self.N):
             for j in range(self.N):
-                if i!=j: 
-                    self.network_adjacency[i][j] = self.connection_strengths
-                    self.nodes[i].make_photonic_connection_to(self.nodes[j],strength=self.connection_strengths)
+                self.nodes[i].make_photonic_connection_to(
+                    self.nodes[j],
+                    strength=self.network_adjacency[i][j]
+                    )

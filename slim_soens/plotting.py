@@ -102,8 +102,9 @@ def plot_nodes(
             fig.text(0.525, 0.95, title, ha='center',fontsize=18)
         fig.text(0.5, 0.05, 'Time (ns)', ha='center', fontsize=14)
         fig.text(0.05, 0.5, 'Unitless Signal and Flux', va='center', rotation='vertical', fontsize=14)
-        fig.legend(bbox_to_anchor=(1,1))
+        fig.legend(bbox_to_anchor=(1,.9))
         plt.tight_layout()
+
         plt.subplots_adjust(bottom=.125)
         plt.subplots_adjust(left=.125,right=.95,top=.9)
 
