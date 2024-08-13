@@ -9,7 +9,7 @@ def initialize_dendrites(node):
     leaf_dends = []
     for dend in node.dendrite_list:
         dend.updated = False
-        dend.flux = dend.flux_offset
+        dend.flux = dend.input_flux + dend.flux_offset
         dend.signal = steady_signal_update(dend.flux)
         if dend.flux > 0:
             leaf_dends.append(dend)
