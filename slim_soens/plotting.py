@@ -313,21 +313,18 @@ def plot_representations(nodes,shape=(28,28),disynaptic=False,activity=False):
         fig,ax = plt.subplots(len(nodes),cols,figsize=(8,4*len(nodes)), sharex=True,sharey=True)
         for n,node in enumerate(nodes):
             
-            learned_offsets_positive = []
-            learned_offsets_negative = []
+            learned_offsets = []
 
             for i,dend in enumerate(node.dendrite_list[2:]):
-                if activity==True:
+                if activity is True:
                     val = dend.signal*dend.outgoing[0][1]
                 else:
                     val = dend.flux_offset
-                if dend.outgoing[0][1] >= 0:
-                    learned_offsets_positive.append(val)
-                else:
-                    learned_offsets_negative.append(val)
 
-            ax[n].imshow(np.array(learned_offsets_positive).reshape(shape),cmap="Greens")
-            reps.append(np.array(learned_offsets_positive))
+                learned_offsets.append(val)
+
+            ax[n].imshow(np.array(learned_offsets).reshape(shape)) #,cmap="Greens")
+            reps.append(np.array(learned_offsets))
             ax[n].set_xticks([])
             ax[n].set_yticks([])
 
