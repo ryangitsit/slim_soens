@@ -72,12 +72,12 @@ class Network():
 
 
 class HopfieldNetwork(Network):
-    
+
     def __init__(self, **params):
         super().__init__()
         self.N                    = 10
         self.connection_strengths = 1
-
+        self.global_offset = 0
         self.__dict__.update(params)
         self.make_net()
         
@@ -91,9 +91,9 @@ class HopfieldNetwork(Network):
 
         self.nodes = []
         for i in range(self.N):
-            self.nodes.append(Neuron(
-                name = f"HopNode_{i}"
-            ))
+            neuron = Neuron(name = f"HopNode_{i}")
+            neuron.dend_soma.flux_offset = self.global_offset
+            self.nodes.append(neuron)
 
         for i in range(self.N):
             for j in range(self.N):
