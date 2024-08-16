@@ -179,6 +179,12 @@ class Neuron():
     def change_weight(self,dend,i,norm_factor):
         dend.incoming[i][1] *= norm_factor
 
+        for o,out in enumerate(dend.incoming[i][0].outgoing):
+            # if dend.incoming[i][0].outgoing[o].
+            if out[0].name == dend.name:
+                out[1] = dend.incoming[i][1]
+
+
     def normalize_fanin(self,fanin_factor=1):
         max_phi_received = 0.5
         max_s = 0.72
@@ -227,7 +233,8 @@ class Neuron():
                     and dend.incoming[i][1] > 0
                     ]
             if input_sum_negative!=0: #f np.abs(input_sum_negative) > max_phi_received:
-                norm_ratio_neg = fanin_factor*max_phi_received/np.abs(input_sum_negative)
+                # norm_ratio_neg = fanin_factor*max_phi_received/np.abs(input_sum_negative)
+                norm_ratio_neg = fanin_factor*0.1675/np.abs(input_sum_negative)
                 [
                     self.change_weight(dend,i,norm_ratio_neg) 
                     for i in range(len(dend.incoming)) 
