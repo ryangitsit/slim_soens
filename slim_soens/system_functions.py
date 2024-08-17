@@ -196,6 +196,20 @@ def picklin(path,name):
     file_to_read.close()
     return obj
 
+def try_pickle(path,name,val,vals):
+    """
+    If saved array already exists
+     - append val to it
+    Otherwise 
+     - create with vals
+    """
+    try:
+        prev = picklin(path,name)
+        prev.append(val)
+        picklit(prev,path,name)
+    except:
+        picklit(vals,path,name)
+
 def binary_fanin(layers):
     weights = [
         [np.random.rand(2) for _ in range(2**(l-1))] 

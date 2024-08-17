@@ -280,7 +280,7 @@ def plot_by_layer(node,layers,flux=False):
     plt.title(node.name)
     plt.show()
 
-def plot_representations(nodes,shape=(28,28),disynaptic=False,activity=False):
+def plot_representations(nodes,shape=(28,28),disynaptic=False,activity=False,rgb=False):
     reps = []
     if disynaptic==True: 
         cols = 2
