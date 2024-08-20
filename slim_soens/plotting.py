@@ -315,7 +315,8 @@ def plot_representations(nodes,shape=(28,28),disynaptic=False,activity=False,rgb
             
             learned_offsets = []
 
-            for i,dend in enumerate(node.dendrite_list[2:]):
+            for i,dend in enumerate(node.dendrite_list[-784:]):
+
                 if activity is True:
                     val = dend.signal*dend.outgoing[0][1]
                 else:

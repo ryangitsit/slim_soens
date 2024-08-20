@@ -62,6 +62,7 @@ class Dendrite():
 
         # dynamic parameters
         self.flux_offset = 0
+        self.input_flux = 0
 
         # for rollover counting
         self.high_roll = 0
