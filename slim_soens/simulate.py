@@ -60,9 +60,9 @@ def initialize_dendrites(node,tf,dt,time_steps):
     """
     for dend in node.dendrite_list:
         if type(dend.flux_offset)!=np.ndarray:
-            dend.flux   = np.ones((time_steps,))*dend.flux_offset
+            dend.flux   = np.ones((time_steps,))*dend.flux_offset + dend.input_flux
         else:
-            dend.flux=dend.flux_offset
+            dend.flux=dend.flux_offset + dend.input_flux
         dend.signal = np.zeros((time_steps,))
 
 def find_phi_th(val,A,B):
