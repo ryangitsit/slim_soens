@@ -65,6 +65,9 @@ def initialize_dendrites(node,tf,dt,time_steps):
             dend.flux=dend.flux_offset + dend.input_flux
         dend.signal = np.zeros((time_steps,))
 
+        # if np.sum(dend.flux) > 0:
+        #     print("signal: ",dend.signal,"\nflux: ", dend.flux)
+
 def find_phi_th(val,A,B):
     """
     Docstring

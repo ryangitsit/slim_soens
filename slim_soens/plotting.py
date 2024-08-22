@@ -290,9 +290,8 @@ def plot_representations(nodes,shape=(28,28),disynaptic=False,activity=False,rgb
             learned_offsets_positive = []
             learned_offsets_negative = []
 
-            for i,dend in enumerate(node.dendrite_list[2:]):
+            for i,dend in enumerate(node.dendrite_list[-1*(shape[0]*shape[1]):]):
                 if activity==True:
-                    print("here")
                     val = dend.signal[-1]*dend.outgoing[0][1]
                 else:
                     val = dend.flux_offset
@@ -316,9 +315,8 @@ def plot_representations(nodes,shape=(28,28),disynaptic=False,activity=False,rgb
             learned_offsets = []
 
             for i,dend in enumerate(node.dendrite_list[-784:]):
-
                 if activity is True:
-                    val = dend.signal*dend.outgoing[0][1]
+                    val = dend.signal[-1]*dend.outgoing[0][1]
                 else:
                     val = dend.flux_offset
 
