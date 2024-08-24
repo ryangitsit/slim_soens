@@ -64,8 +64,14 @@ def features_to_input(feature_maps):
         flattened_features.append(feat.flatten())
     return np.concatenate(np.array(flattened_features))
 
+def img_to_series(sample):
+    return np.concatenate([np.ones(10)*val for val in sample.flatten()])[1000:7000]/255
 
-def get_data(dataset,size,convolve=False):
+def add_ssm_input(ssm,sample,B):
+    for i,dend in enumerate(ssm.x):
+        dend.input_flux = np.clip(img_to_series(sample)*B[i],-0.5,0.5)
+
+def get_data(dataset,size,convolve=False,sequentialize=False):
     """
     Returns data and labels for appropriate dataset and size
     """
@@ -104,6 +110,15 @@ def get_data(dataset,size,convolve=False):
                 convolved_rgb_data.append(features_to_input(feature_maps))
             
             data = convolved_rgb_data
+
+    elif sequentialize==True:
+        sequentialized_data = []
+        for sample in data:
+            sequentialized_data.append(np.concatenate(
+                [np.ones(10)*val for val in sample.flatten()])[1000:7000]/255
+            )
+        data = sequentialized_data
+
     else:
         flattened_data = []
         for sample in data:

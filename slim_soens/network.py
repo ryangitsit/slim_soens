@@ -18,6 +18,7 @@ class Network():
         self.run_simulation = None
         self.multithreading = None
         self.backend = "default"
+        self.no_spikes = False
         self.__dict__.update(params)
         self.jjparams = get_jj_params()
 

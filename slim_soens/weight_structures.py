@@ -103,3 +103,22 @@ def make_hybrid_weights(letter,pixels,symmetry=False):
         ]
         for l,layer in enumerate(W)]
     return W, arbor_params
+
+def make_random_shallow_weights(shape):
+    return [[np.random.rand(shape)]]
+
+def make_random_deep_weights(shape):
+    print("Making deep trees")
+    weights = []
+    layers = int(np.log2(shape)/np.log2(2))
+    grp = 2
+    for l in range(layers):
+        groups = int(shape/(2**(l))/2)
+        layer = []
+        if l != 0:
+            grp = int(len(weights[-1])/groups)
+        for group in range(groups):
+            layer.append(np.random.rand(grp))
+        weights.append(layer)
+    weights.reverse()
+    return weights

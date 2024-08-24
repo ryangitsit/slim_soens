@@ -100,11 +100,11 @@ def update_signal(dend,t,dt,d_tau):
     """
     Docstring
     """
-    r_fq = s_of_phi(dend.flux[t],dend.signal[t])
+    # print(dend.name,dend.flux[t])
+    r_fq = s_of_phi(np.abs(dend.flux[t]),dend.signal[t])
     dend.signal[t+1] = dend.signal[t] * ( 
             1 - d_tau*dend.alpha/dend.beta
             ) + (d_tau/dend.beta) * r_fq
-
 
 
 def update_dendrite(dend,t,dt,d_tau):
@@ -136,6 +136,23 @@ def update_soma(soma,ref,t,dt,d_tau,tf):
             update_signal(soma,t,dt,d_tau)
     return soma
 
+def dendritic_euler(net,time_steps,d_tau):
+    for t in range(time_steps-1):
+        for node in net.nodes:
+            for dend in node.dendrite_list[1:]:
+                update_dendrite(dend,t,net.dt,d_tau)
+    return net
+
+def network_euler(net,time_steps,d_tau):
+    for t in range(time_steps-1):
+        for node in net.nodes:
+            for dend in node.dendrite_list[1:]:
+                update_dendrite(dend,t,net.dt,d_tau)
+            update_soma(
+                node.dend_soma,node.dend_ref,t,net.dt,d_tau,time_steps
+                )
+    return net
+
 def run_slim_soens(net):
     """
     Docstring
@@ -146,15 +163,14 @@ def run_slim_soens(net):
         initialize_synapses (node,net.duration,net.dt,time_steps)
         initialize_dendrites(node,net.duration,net.dt,time_steps)
 
+    if net.no_spikes==True:
+        simulator = dendritic_euler
+    else:
+        simulator = network_euler
+
     t1 = time.perf_counter()
 
-    for t in range(time_steps-1):
-        for node in net.nodes:
-            for dend in node.dendrite_list[1:]:
-                update_dendrite(dend,t,net.dt,d_tau)
-            update_soma(
-                node.dend_soma,node.dend_ref,t,net.dt,d_tau,time_steps
-                )
+    net = simulator(net,time_steps,d_tau)
 
     t = time_steps-1
     for node in net.nodes:
