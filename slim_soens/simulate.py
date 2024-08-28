@@ -101,6 +101,7 @@ def update_signal(dend,t,dt,d_tau):
     Docstring
     """
     # print(dend.name,dend.flux[t])
+    # r_fq = s_of_phi(np.abs(dend.flux[t]),dend.signal[t])
     r_fq = s_of_phi(np.abs(dend.flux[t]),dend.signal[t])
     dend.signal[t+1] = dend.signal[t] * ( 
             1 - d_tau*dend.alpha/dend.beta
@@ -139,7 +140,7 @@ def update_soma(soma,ref,t,dt,d_tau,tf):
 def dendritic_euler(net,time_steps,d_tau):
     for t in range(time_steps-1):
         for node in net.nodes:
-            for dend in node.dendrite_list[1:]:
+            for dend in node.dendrite_list:
                 update_dendrite(dend,t,net.dt,d_tau)
     return net
 

@@ -71,15 +71,20 @@ def add_ssm_input(ssm,sample,B):
     for i,dend in enumerate(ssm.x):
         dend.input_flux = np.clip(img_to_series(sample)*B[i],-0.5,0.5)
 
-def get_data(dataset,size,convolve=False,sequentialize=False):
+def get_data(dataset,size,convolve=False,sequentialize=False,test_set=False):
     """
     Returns data and labels for appropriate dataset and size
     """
     if dataset == "mnist":
         from keras.datasets import mnist
         (X_train, y_train), (X_test, y_test) = mnist.load_data()
-        data = X_train[:size]
-        labels = y_train[:size]
+        if test_set==False:
+            data = X_train[:size]
+            labels = y_train[:size]
+        else:
+            print("Getting test data")
+            data = X_test[:size]
+            labels = y_test[:size]
     elif dataset == 'cifar':
         from keras.datasets import cifar10
         (X_train, y_train), (X_test, y_test) = cifar10.load_data()
