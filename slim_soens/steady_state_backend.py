@@ -1,6 +1,6 @@
 import numpy as np
 
-def initialize_dendrites(node):
+def initialize_dendrites(node,activation_function):
     """
     Docstring
     """
@@ -8,7 +8,7 @@ def initialize_dendrites(node):
     for dend in node.dendrite_list:
         dend.updated = False
         dend.flux = dend.input_flux + dend.flux_offset
-        dend.signal = steady_signal_update(dend.flux)
+        dend.signal = activation_function(dend.flux)
         if dend.flux > 0:
             leaf_dends.append(dend)
     return leaf_dends
@@ -27,6 +27,9 @@ def steady_signal_update(flux):
             )
         ]
 
+def relu(flux):
+    return flux * (flux > 0)
+
 def recursive_flux_update(dend):
     for o,out in enumerate(dend.outgoing):
         
@@ -40,11 +43,16 @@ def run_steady_state(net):
     steady_signal_array = np.load("steady_signal.npy")
     steady_signal_update.ssa = steady_signal_array
     steady_signal_update.len_ssa = len(steady_signal_array)
+    if net.activation == "superconducting":
+        activation_function = steady_signal_update
+    elif net.activation == "relu":
+        activation_function = relu
+
     for node in net.nodes:
         
-        leaf_dends = initialize_dendrites(node)
+        leaf_dends = initialize_dendrites(node,activation_function)
         # print(len(leaf_dends))
         for l,leaf in enumerate(leaf_dends):
             recursive_flux_update(leaf)
         # print(node.dend_soma.flux)
-        node.dend_soma.signal = steady_signal_update(node.dend_soma.flux)
+        node.dend_soma.signal = activation_function(node.dend_soma.flux)
