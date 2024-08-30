@@ -36,7 +36,7 @@ def recursive_flux_update(dend):
         out[0].flux += dend.signal*out[1]
         # out[0].signal += steady_signal_update(out[0].flux)
         out[0].updated = True
-        recursive_flux_update(out[0])
+        # recursive_flux_update(out[0])
 
 def run_steady_state(net):
     # print("STEADY STATE BACKEND")
@@ -50,9 +50,26 @@ def run_steady_state(net):
 
     for node in net.nodes:
         
+        # leaf_dends = initialize_dendrites(node,activation_function)
+        # # print(len(leaf_dends))
+        # for l,leaf in enumerate(leaf_dends):
+        #     recursive_flux_update(leaf)
+
+            
+        # # print(node.dend_soma.flux)
+        # # node.dend_soma.signal = activation_function(node.dend_soma.flux)
+        # for d,dend in enumerate(node.dendrite_list[::-1]):
+        #     dend.signal = steady_signal_update(dend.flux)
+
+        ########################################
         leaf_dends = initialize_dendrites(node,activation_function)
-        # print(len(leaf_dends))
-        for l,leaf in enumerate(leaf_dends):
-            recursive_flux_update(leaf)
-        # print(node.dend_soma.flux)
-        node.dend_soma.signal = activation_function(node.dend_soma.flux)
+        for d,dend in enumerate(node.dendrite_list[::-1]):
+            for i,(indend,w) in enumerate(dend.incoming):
+                dend.flux += indend.signal*w
+            dend.signal = steady_signal_update(dend.flux)
+
+    
+
+    # if net.epochs == 10:
+    #     from plotting import plot_representations
+    #     plot_representations(net.nodes,weights=True)

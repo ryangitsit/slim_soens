@@ -280,7 +280,9 @@ def plot_by_layer(node,layers,flux=False):
     plt.title(node.name)
     plt.show()
 
-def plot_representations(nodes,shape=(28,28),disynaptic=False,activity=False,rgb=False):
+def plot_representations(
+        nodes,shape=(28,28),disynaptic=False,activity=False,rgb=False,weights=False
+        ):
     reps = []
     if disynaptic==True: 
         cols = 2
@@ -316,7 +318,12 @@ def plot_representations(nodes,shape=(28,28),disynaptic=False,activity=False,rgb
 
             for i,dend in enumerate(node.dendrite_list[-784:]):
                 if activity is True:
-                    val = dend.signal[-1]*dend.outgoing[0][1]
+                    if type(dend.signal) is np.ndarray:
+                        val = dend.signal[-1]*dend.outgoing[0][1]
+                    else:
+                        val = dend.signal*dend.outgoing[0][1]
+                elif weights==True:
+                    val = dend.outgoing[0][1]
                 else:
                     val = dend.flux_offset
 
