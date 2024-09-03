@@ -316,8 +316,10 @@ def make_repeated_inputs(letters,spike_time,repeats):
 
 def array_to_rows(array,channels):
     rows = [ [] for _ in range(channels) ]
-    for i in range(len(array[0])):
-        rows[int(array[0][i])].append(array[1][i])
+    # print(len(array[0]),len(array[1]))
+    for i,unit in enumerate(array[0]):
+        # print(i,int(array[0][i]),int(array[1][i]),len(array[1]),len(array[1]))
+        rows[int(unit)].append(array[1][i])
     return rows
 
 def sizeup_obj(obj):

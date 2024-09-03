@@ -75,6 +75,7 @@ def get_data(dataset,size,convolve=False,sequentialize=False,test_set=False):
     """
     Returns data and labels for appropriate dataset and size
     """
+    intype = 'steady'
     if dataset == "mnist":
         from keras.datasets import mnist
         (X_train, y_train), (X_test, y_test) = mnist.load_data()
@@ -85,12 +86,61 @@ def get_data(dataset,size,convolve=False,sequentialize=False,test_set=False):
             print("Getting test data")
             data = X_test[:size]
             labels = y_test[:size]
+
+        datashape  = data[0].shape
+        inputshape = datashape[0]
+
     elif dataset == 'cifar':
         from keras.datasets import cifar10
         (X_train, y_train), (X_test, y_test) = cifar10.load_data()
         print(X_train[0].shape, X_train[0].flatten().shape)
         data = X_train[:size]
         labels = y_train[:size]
+        datashape  = data[0].shape
+        inputshape = datashape[0]
+
+    elif dataset == 'heidelberg':
+        import os
+        import urllib.request
+        import gzip, shutil
+        from tensorflow.keras.utils import get_file
+        import tables
+        cache_dir=os.path.expanduser("~/data")
+        cache_subdir="hdspikes"
+        print("Using cache dir: %s"%cache_dir)
+        # The remote directory with the data files
+        base_url = "https://zenkelab.org/datasets"
+        # Retrieve MD5 hashes from remote
+        response = urllib.request.urlopen("%s/md5sums.txt"%base_url)
+        data = response.read() 
+        lines = data.decode('utf-8').split("\n")
+        file_hashes = { line.split()[1]:line.split()[0] for line in lines if len(line.split())==2 }
+        def get_and_gunzip(origin, filename, md5hash=None):
+            gz_file_path = get_file(filename, origin, md5_hash=md5hash, cache_dir=cache_dir, cache_subdir=cache_subdir)
+            hdf5_file_path=gz_file_path[:-3]
+            if not os.path.isfile(hdf5_file_path) or os.path.getctime(gz_file_path) > os.path.getctime(hdf5_file_path):
+                print("Decompressing %s"%gz_file_path)
+                with gzip.open(gz_file_path, 'r') as f_in, open(hdf5_file_path, 'wb') as f_out:
+                    shutil.copyfileobj(f_in, f_out)
+            return hdf5_file_path
+        # Download the Spiking Heidelberg Digits (SHD) dataset
+        files = [ "shd_train.h5.gz", 
+                "shd_test.h5.gz",
+                ]
+        for fn in files:
+            origin = "%s/%s"%(base_url,fn)
+            hdf5_file_path = get_and_gunzip(origin, fn, md5hash=file_hashes[fn])
+            print(hdf5_file_path)
+        fileh = tables.open_file(hdf5_file_path, mode='r')
+        units = fileh.root.spikes.units[:size]
+        times = fileh.root.spikes.times[:size]
+        labels = fileh.root.labels[:size]
+        data = []
+        for i in range(size):
+            data.append([units[i],times[i]])
+
+        inputshape = 700
+        intype = 'spikes'
 
     if convolve==True:
         if dataset == "mnist":
@@ -124,13 +174,13 @@ def get_data(dataset,size,convolve=False,sequentialize=False,test_set=False):
             )
         data = sequentialized_data
 
-    else:
+    elif intype=='steady':
         flattened_data = []
         for sample in data:
             flattened_data.append(sample.flatten())
         data = flattened_data
 
-    return data, labels
+    return data, labels, inputshape, intype
 
 def split_data(data, labels, tvt_split):
     size = len(labels)
