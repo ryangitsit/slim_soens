@@ -19,6 +19,8 @@ class Network():
         self.multithreading = None
         self.backend = "default"
         self.no_spikes = False
+        self.ib = 1.8
+        self.phi_th = 0.1675
         self.activation = "superconducting"
         self.__dict__.update(params)
         self.jjparams = get_jj_params()

@@ -73,8 +73,8 @@ class Dendrite():
         self.incoming = []
 
         # collectors
-        self.flux   = []
-        self.signal = []
+        self.flux   = 0
+        self.signal = 0
 
         self.__dict__.update(params)
 

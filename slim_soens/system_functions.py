@@ -336,12 +336,12 @@ def clear_net(net):
         node.dend_soma.spikes = []
         node.dend_soma.quiescence = 0
         for dend in node.dendrite_list:
-            dend.signal = np.array([])
-            dend.flux   = np.array([])
+            dend.signal = 0
+            dend.flux   = 0
 
         for syn in node.synapse_list:
-            syn.flux        = np.array([])
-            syn.spike_times = np.array([])
+            syn.flux        = 0
+            syn.spike_times = 0
 
         net.output_spikes = []
     del(net)

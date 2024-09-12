@@ -88,7 +88,7 @@ def get_data(dataset,size,convolve=False,sequentialize=False,test_set=False):
             labels = y_test[:size]
 
         datashape  = data[0].shape
-        inputshape = datashape[0]
+        inputshape = 784
 
     elif dataset == 'cifar':
         from keras.datasets import cifar10

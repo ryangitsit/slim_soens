@@ -63,7 +63,13 @@ def initialize_dendrites(node,tf,dt,time_steps):
             dend.flux   = np.ones((time_steps,))*dend.flux_offset + dend.input_flux
         else:
             dend.flux=dend.flux_offset + dend.input_flux
-        dend.signal = np.zeros((time_steps,))
+        
+        try:
+            signal = np.zeros((time_steps,))
+            signal[0] = dend.signal
+            dend.signal = signal
+        except:
+            print(dend.name,dend.signal)
 
         # if np.sum(dend.flux) > 0:
         #     print("signal: ",dend.signal,"\nflux: ", dend.flux)
@@ -75,11 +81,11 @@ def find_phi_th(val,A,B):
     return A*np.arccos(val/2) + B*(2-val)
 
 # @jit(nopython=True)
-def s_of_phi(phi,s,A=1,B=.466,ib=1.8):
+def s_of_phi(phi,s,A=1,B=.466,ib=1.8,phi_th=0.1675):
     """
     Docstring
     """
-    phi_th = 0.1675 #ind_phi_th(s,A,B) #0.1675
+    # phi_th = 0# 0.1675 #ind_phi_th(s,A,B) #0.1675
     r_fq = A*(phi-phi_th)*(B*ib-s)
     if phi<phi_th: r_fq = 0
     return r_fq
@@ -96,27 +102,27 @@ def update_flux(dend,t):
             recieved_flux+=in_obj.signal[t]*w
     dend.flux[t] += recieved_flux
 
-def update_signal(dend,t,dt,d_tau):
+def update_signal(dend,t,dt,d_tau,ib,phi_th):
     """
     Docstring
     """
     # print(dend.name,dend.flux[t])
     # r_fq = s_of_phi(np.abs(dend.flux[t]),dend.signal[t])
-    r_fq = s_of_phi(np.abs(dend.flux[t]),dend.signal[t])
+    r_fq = s_of_phi(np.abs(dend.flux[t]),dend.signal[t],ib=ib,phi_th=phi_th)
     dend.signal[t+1] = dend.signal[t] * ( 
             1 - d_tau*dend.alpha/dend.beta
             ) + (d_tau/dend.beta) * r_fq
 
 
-def update_dendrite(dend,t,dt,d_tau):
+def update_dendrite(dend,t,dt,d_tau,ib,phi_th):
     """
     Docstring
     """
     update_flux(dend,t)
-    update_signal(dend,t,dt,d_tau)
+    update_signal(dend,t,dt,d_tau,ib,phi_th)
     return dend
 
-def update_soma(soma,ref,t,dt,d_tau,tf):
+def update_soma(soma,ref,t,dt,d_tau,tf,ib,phi_th):
     """
     Docstring
     """
@@ -134,23 +140,23 @@ def update_soma(soma,ref,t,dt,d_tau,tf):
                 add_spike(ref,t+1,dt,len(soma.signal))
             soma.quiescence = spk_t
         else:
-            update_signal(soma,t,dt,d_tau)
+            update_signal(soma,t,dt,d_tau,ib,phi_th)
     return soma
 
 def dendritic_euler(net,time_steps,d_tau):
     for t in range(time_steps-1):
         for node in net.nodes:
             for dend in node.dendrite_list:
-                update_dendrite(dend,t,net.dt,d_tau)
+                update_dendrite(dend,t,net.dt,d_tau,net.ib,net.phi_th)
     return net
 
 def network_euler(net,time_steps,d_tau):
     for t in range(time_steps-1):
         for node in net.nodes:
             for dend in node.dendrite_list[1:]:
-                update_dendrite(dend,t,net.dt,d_tau)
+                update_dendrite(dend,t,net.dt,d_tau,net.ib,net.phi_th)
             update_soma(
-                node.dend_soma,node.dend_ref,t,net.dt,d_tau,time_steps
+                node.dend_soma,node.dend_ref,t,net.dt,d_tau,time_steps,net.ib,net.phi_th
                 )
     return net
 
