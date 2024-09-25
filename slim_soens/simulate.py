@@ -69,7 +69,8 @@ def initialize_dendrites(node,tf,dt,time_steps):
             signal[0] = dend.signal
             dend.signal = signal
         except:
-            print(dend.name,dend.signal)
+            pass
+            # print(dend.name,dend.signal)
 
         # if np.sum(dend.flux) > 0:
         #     print("signal: ",dend.signal,"\nflux: ", dend.flux)

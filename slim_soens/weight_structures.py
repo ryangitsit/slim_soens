@@ -107,6 +107,9 @@ def make_hybrid_weights(letter,pixels,symmetry=False):
 def make_random_shallow_weights(shape):
     return [[np.random.rand(shape)]]
 
+def make_disynaptic_weights(shape):
+    return [[[-1,1] for _ in range(shape)]]
+
 def make_random_deep_weights(shape):
     print("Making deep trees")
     weights = []
