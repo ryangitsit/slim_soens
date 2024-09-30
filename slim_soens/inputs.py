@@ -90,6 +90,22 @@ def get_data(dataset,size,convolve=False,sequentialize=False,test_set=False):
         datashape  = data[0].shape
         inputshape = 784
 
+    if dataset == "fashion_mnist":
+        from keras.datasets import fashion_mnist
+        (X_train, y_train), (X_test, y_test) = fashion_mnist.load_data()
+        if test_set==False:
+            data = X_train[:size]
+            labels = y_train[:size]
+        else:
+            print("Getting test data")
+            data = X_test[:size]
+            labels = y_test[:size]
+
+        print(len(X_train),len(X_test))
+        datashape  = data[0].shape
+        inputshape = data[0].shape[0]*data[1].shape[1]
+        
+
     elif dataset == 'cifar':
         from keras.datasets import cifar10
         (X_train, y_train), (X_test, y_test) = cifar10.load_data()
