@@ -222,17 +222,17 @@ def make_letters(patterns='zvn'):
 
     # non-noisy nine-pixel letters
     letters = {
-        'z': [1,1,0,
+        'z': np.array([1,1,0,
               0,1,0,
-              0,1,1],
+              0,1,1]),
 
-        'v': [1,0,1,
+        'v': np.array([1,0,1,
               1,0,1,
-              0,1,0],
+              0,1,0]),
 
-        'n': [0,1,0,
+        'n': np.array([0,1,0,
               1,0,1,
-              1,0,1]
+              1,0,1])
     }
 
     if patterns == 'zvnx+':

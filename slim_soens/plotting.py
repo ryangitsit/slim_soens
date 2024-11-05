@@ -316,7 +316,7 @@ def plot_representations(
             
             learned_offsets = []
 
-            for i,dend in enumerate(node.dendrite_list[-784:]):
+            for i,dend in enumerate(node.dendrite_list[-(shape[0]*shape[1]):]):
                 if activity is True:
                     if type(dend.signal) is np.ndarray:
                         val = dend.signal[-1]*dend.outgoing[0][1]
