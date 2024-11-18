@@ -341,9 +341,9 @@ def clear_net(net):
 
         for syn in node.synapse_list:
             syn.flux        = 0
-            syn.spike_times = 0
+            syn.spike_times = np.array([])
 
-        net.output_spikes = []
+        net.output_spikes = np.array([])
     del(net)
     # t2 = time.perf_counter()
     # print(f"Time to clear network = {np.round(t2-t1,5)}")
