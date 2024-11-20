@@ -159,7 +159,7 @@ def get_data(dataset,size,convolve=False,sequentialize=False,test_set=False):
         intype = 'spikes'
 
     if convolve==True:
-        if dataset == "mnist":
+        if dataset == "mnist" or dataset == "fashion_mnist":
             x = 3
             y = 3
             stride = 1
@@ -170,6 +170,19 @@ def get_data(dataset,size,convolve=False,sequentialize=False,test_set=False):
             data = convolved_data
 
         elif dataset == 'cifar':
+            x = 3
+            y = 3
+            stride = 1
+            convolved_rgb_data = []
+            for sample in data:
+                feature_maps = np.concatenate(
+                    [convolve_basic(sample[:,:,i],x,y,stride) for i in range(3)]
+                    )
+                convolved_rgb_data.append(features_to_input(feature_maps))
+            
+            data = convolved_rgb_data
+
+        elif dataset == 'heidelberg':
             x = 3
             y = 3
             stride = 1

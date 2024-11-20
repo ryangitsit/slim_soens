@@ -165,10 +165,12 @@ class Neuron():
                 np.concatenate([self.synapse_list[i*2+1].spike_times,row])
                 )
             
-    def add_indexed_spikes(self,indexed_spikes,channels=None,doubled=False):
+    def add_indexed_spikes(self,indexed_spikes,channels=None,doubled=False,extend=1):
         if not channels:
             channels = max(indexed_spikes[0])+1
         spike_rows = array_to_rows(indexed_spikes,channels)
+        if extend>1:
+            spike_rows = [row for _ in range(4) for row in spike_rows]
         if doubled==False:
             self.add_spike_rows(spike_rows)
         else:
