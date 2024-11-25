@@ -225,3 +225,28 @@ def split_data(data, labels, tvt_split):
 
     return train_data,val_data,test_data,train_labels,val_labels,test_labels
 
+def get_ECG5000():
+    import pandas as pd
+
+    dataframe = pd.read_csv(
+        'http://storage.googleapis.com/download.tensorflow.org/data/ecg.csv', 
+        header=None
+        )
+
+    raw_data = dataframe.values
+    dataframe.head()
+    labels = raw_data[:, -1]
+    data = raw_data[:, 0:-1]
+
+    shuff = np.arange(len(labels))
+    np.random.shuffle(shuff)
+    data   = data[shuff]
+    labels = labels[shuff]
+
+    # plt.title(labels[0])
+    # plt.plot(data[0])
+    # plt.show()
+
+    return data, labels
+
+data, labels = get_ECG5000()
