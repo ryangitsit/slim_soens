@@ -158,6 +158,13 @@ def get_data(dataset,size,convolve=False,sequentialize=False,test_set=False):
         inputshape = 700
         intype = 'spikes'
 
+    elif dataset == 'mnist_preconvolved':
+        data   = np.load("../datasets/preconv/MNIST_train_X_conv.npy")
+        labels = np.load("../datasets/preconv/MNIST_train_y_conv.npy")
+        inputshape = len(data[0])
+        print(inputshape, labels[:10])
+    
+
     if convolve==True:
         if dataset == "mnist" or dataset == "fashion_mnist":
             x = 3
