@@ -163,6 +163,18 @@ def get_data(dataset,size,convolve=False,sequentialize=False,test_set=False):
         labels = np.load("../datasets/preconv/MNIST_train_y_conv.npy")
         inputshape = len(data[0])
         print(inputshape, labels[:10])
+
+    elif dataset == 'mnist_preconvolved_ext':
+        data   = np.load("../datasets/preconv/MNIST_train_X_conv_ext.npy")
+        labels = np.load("../datasets/preconv/MNIST_train_y_conv_ext.npy")
+        inputshape = len(data[0])
+        print(inputshape, labels[:10])
+
+    elif dataset == "fashion_preconvolved_ext":
+        data   = np.load("../datasets/preconv/fashionMNIST_train_X_conv_ext.npy")
+        labels = np.load("../datasets/preconv/fashionMNIST_train_y_conv_ext.npy")
+        inputshape = len(data[0])
+        print(inputshape, labels[:10])
     
 
     if convolve==True:
@@ -256,4 +268,4 @@ def get_ECG5000():
 
     return data, labels
 
-data, labels = get_ECG5000()
+# data, labels = get_ECG5000()
