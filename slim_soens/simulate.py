@@ -109,7 +109,10 @@ def update_signal(dend,t,dt,d_tau,ib,phi_th):
     """
     # print(dend.name,dend.flux[t])
     # r_fq = s_of_phi(np.abs(dend.flux[t]),dend.signal[t])
-    r_fq = s_of_phi(np.abs(dend.flux[t]),dend.signal[t],ib=ib,phi_th=phi_th)
+    r_fq = s_of_phi(np.abs(dend.flux[t]),dend.signal[t],ib=ib,phi_th=phi_th) #negative excitation
+
+    # r_fq = s_of_phi(dend.flux[t],dend.signal[t],ib=ib,phi_th=phi_th)
+
     dend.signal[t+1] = dend.signal[t] * ( 
             1 - d_tau*dend.alpha/dend.beta
             ) + (d_tau/dend.beta) * r_fq

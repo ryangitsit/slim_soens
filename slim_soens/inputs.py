@@ -55,7 +55,7 @@ def convolve_basic(sample,x,y,stride):
             window = sample[y1:y2,x1:x2]
             for f,feat in enumerate(feature_maps):
                 feat[i][j] = (window*convolutions[f]).sum()
-
+    
     return feature_maps
 
 def features_to_input(feature_maps):
